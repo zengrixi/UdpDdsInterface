@@ -1,0 +1,362 @@
+//联合战术XX系统接口文件
+module LHZS
+
+{
+	//和VRFORCE相关的接口
+	module VRFORCE_ENTITY
+	{
+		//日期类
+		struct DATE_OF_DATA 
+		{
+			unsigned short year_uh;
+			unsigned short month_uh;
+			unsigned short day_uh;
+		};
+
+		//电磁态势参数类接口，共3个，未尔公司用
+		//参数1
+
+		struct  RADAR_PARAMETERS
+		{
+			char  Platform[32];
+
+			char  RadarName[32];
+
+			char  Status;
+
+			double RCSValue;
+
+			double Frequency;
+
+			double MaxPower;
+
+			double PulseWidth;
+
+			double PulseRepFre;
+
+			double MaxDectDis;
+
+			char ScanMode;
+
+			char ScanDirection;
+
+			double GazeTime;
+
+			double BandWidth;
+
+			double SystemNoiseTem;
+
+			double ReceNoiseFigure;
+
+			double BandWidth1;
+
+			double ReceFeederLoss;
+
+			double SNRThreshold;
+
+			double FalseAlarmProb;
+
+			long PulseNum;
+
+			double AtnEleBeamWidth;
+
+			double AtnAziBeamWidth;
+
+			double EleRangeMin;
+
+			double EleRangeMax;
+
+			double AziRangeMin;
+
+			double AziRangeMax;
+
+			double AntennaGain;
+		};
+		//参数2
+		struct  COMM_PARAMETERS//[1:30]
+		{
+			char  Platform[32];
+
+			char  CommName[32];
+
+			char Status;
+
+			double TransPower;
+
+			double Frequency;
+
+			double BandWidth;
+
+			double TransLoss;
+
+			double Frequency1;
+
+			double BandWidth1;
+
+			double RecvLoss;
+
+			double CommuReceNoiseFactor;
+
+			double CommuReceNoisePower;
+
+			double AntennaGain;
+		};
+		//参数3
+
+		struct  JAM_PARAMETERS//[1:31]
+		{
+			char  Platform[32];
+
+			char  JamName[32];
+
+			char  Status;
+
+			char  JamType;
+
+			double Frequency;
+
+			double BandWidth;
+
+			double TransPower;
+
+			double DurationTime;
+
+			double TransLoss;
+
+			char EcmStyle;
+
+			char AntennaPolarization;
+
+			double AntennaGain;
+		};
+
+		//软件无线电波形参数
+
+		struct WAVE_PARAMETER_RW 
+		{
+			//for ALL
+			unsigned short equipid;
+
+			unsigned short channel_number;
+
+			//HF
+			char local_addr;
+
+			char work_mode_HF;
+
+			char adaptive_switch;
+
+			char fixed_freq_rate;
+
+			char leap_freq_rate;
+
+			char netid;
+
+			char trans_mode_HF;
+
+			char freq_table_number;
+
+			char station_style;
+
+			char ciphered;
+
+
+			//413
+			char business_type;
+
+			char duplex_mode;
+
+			char trans_rate;
+
+			char interwine_mode;
+
+			char trans_mode_413;
+
+			unsigned short address;
+
+			//UHF
+			long work_freq;
+
+			char link_mode;
+
+			char work_mode_UHF;
+
+			char power_level;
+
+			char RAP;
+
+			//JIDS
+
+		};
+		//软件无线电参数
+
+		struct COMM_PARAMETERS_RW 
+		{
+			char BIT_type;
+
+			char equipment_status;
+
+			unsigned short channelNumber;
+
+			sequence<char> channelList;
+
+			sequence<char> wave_typeList;
+
+			sequence<WAVE_PARAMETER_RW> wave_parameter_rwList;
+
+			//unsigned short channel_number[256];//0-255
+			//char wave_type[256]; //0-8
+
+		};
+
+		 //RADAR传感器类接口
+
+		struct SENSOR_RADAR
+		{
+
+			unsigned short sensorid;
+
+			RADAR_PARAMETERS radar_parameters;// for RADAR
+
+		};
+
+		//COMM传感器类接口
+		struct SENSOR_COMM
+		{
+			unsigned short sensorid;
+
+			COMM_PARAMETERS comm_parameters;//for COMM
+
+			COMM_PARAMETERS_RW comm_parameters_rw;//for COMM
+
+		};
+
+		//JAM传感器类接口
+		struct SENSOR_JAM
+		{
+
+			unsigned short sensorid;
+
+			JAM_PARAMETERS jam_parameters;//for JAM
+
+		};
+
+		//INFRARED传感器类接口
+		struct SENSOR_INFRARED
+		{
+
+			unsigned short sensorid;
+
+			double distance;
+
+		};
+
+		//ESM传感器类接口
+		struct SENSOR_ESM
+		{
+
+			unsigned short sensorid;
+
+			double distance;
+
+		};
+		
+		//实体类接口
+		struct ENTITYSTATE_REPORT
+		{
+
+			unsigned short entityID;
+
+			char entityName[32];
+
+			unsigned short entityIFFCode;
+
+			unsigned short entityClass;
+
+			unsigned short entityModel;
+
+			char entityType[32];
+
+			DATE_OF_DATA dateOfUpdate;
+
+			long timeOfUpdate;
+
+			long damageState;
+			
+			double oil;
+
+			double geodeticLocationLon;
+
+			double geodeticLocationLat;
+
+			double geodeticLocationAlt;
+
+			double topographicVelocityX;
+
+			double topographicVelocityY;
+
+			double topographicVelocityZ;
+
+			double topographicAccelerationX;
+
+			double topographicAccelerationY;
+
+			double topographicAccelerationZ;
+
+			double topographicPsi;
+
+			double topographicTheta;
+
+			double topographicPhi;
+
+			double rotationalVelocityX;
+
+			double rotationalVelocityY;
+
+			double rotationalVelocityZ;
+
+			unsigned short sizeOfGroup;//编队内个数
+
+			unsigned short platId;//平台标识号
+
+			unsigned short leaderId;//长机标识号
+
+			unsigned short C2Id;//平台标识号
+
+			SENSOR_RADAR sensor_radar;
+
+			SENSOR_COMM sensor_comm;
+
+			SENSOR_JAM sensor_jam;
+
+			SENSOR_INFRARED sensor_infrared;
+
+			SENSOR_ESM sensor_esm;
+		};
+
+		//实体队列类接口[1：1]
+
+		const string ENTITYSTATE_REPORT_LIST_TOPIC="LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST";
+
+		struct ENTITYSTATE_REPORT_LIST
+		{
+			unsigned short entityNumber;//@key
+
+			sequence<ENTITYSTATE_REPORT,1000> entityList;
+
+		};
+
+		//无人机实体队列类接口，由无人机向想定报告[1：2]
+
+		const string UAV_ENTITYSTATE_REPORT_LIST_TOPIC="LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST";
+
+		struct UAV_ENTITYSTATE_REPORT_LIST//
+		{
+
+			unsigned short entityNumber;//@key
+
+			sequence<ENTITYSTATE_REPORT> entityList;
+
+		};
+	};
+};

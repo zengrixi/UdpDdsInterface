@@ -1,0 +1,395 @@
+//联合战术XX系统接口文件
+module LHZS
+
+{
+	//和VRFORCE相关的接口
+	module VRFORCE_COMMAND
+	{
+		//日期类
+		struct DATE_OF_DATA 
+		{
+
+			unsigned short year_uh;
+
+			unsigned short month_uh;
+
+			unsigned short day_uh;
+
+		};
+
+
+		//位置类接口
+
+		struct POS_DATA//位置//[1:6]
+		{
+
+			unsigned short posId;//@key 
+
+			double lon_f; 
+
+			double lat_f;
+
+			double alt_f;
+
+		};
+
+		//传感器参数部分开始
+		//电磁态势参数类接口，共3个，未尔公司用
+		//参数1
+
+		struct  RADAR_PARAMETERS
+		{
+			char  Platform[32];
+
+			char  RadarName[32];
+			
+			unsigned short  Model;
+
+			char  Status;
+
+			double RCSValue;
+
+			double Frequency;
+
+			double MaxPower;
+
+			double PulseWidth;
+
+			double PulseRepFre;
+
+			double MaxDectDis;
+
+			char ScanMode;
+
+			char ScanDirection;
+
+			double GazeTime;
+
+			double BandWidth;
+
+			double SystemNoiseTem;
+
+			double ReceNoiseFigure;
+
+			double BandWidth1;
+
+			double ReceFeederLoss;
+
+			double SNRThreshold;
+
+			double FalseAlarmProb;
+
+			long PulseNum;
+
+			double AtnEleBeamWidth;
+
+			double AtnAziBeamWidth;
+
+			double EleRangeMin;
+
+			double EleRangeMax;
+
+			double AziRangeMin;
+
+			double AziRangeMax;
+
+			double AntennaGain;
+		};
+		//参数2
+		struct  COMM_PARAMETERS//[1:30]
+		{
+			char  Platform[32];
+
+			char  CommName[32];
+
+			unsigned short  Model;
+
+			char Status;
+
+			double TransPower;
+
+			double Frequency;
+
+			double BandWidth;
+
+			double TransLoss;
+
+			double Frequency1;
+
+			double BandWidth1;
+
+			double RecvLoss;
+
+			double CommuReceNoiseFactor;
+
+			double CommuReceNoisePower;
+
+			double AntennaGain;
+		};
+		//参数3
+
+		struct  JAM_PARAMETERS//[1:31]
+		{
+			char  Platform[32];
+
+			char  JamName[32];
+
+			unsigned short  Model;
+
+			char  Status;
+
+			char  JamType;
+
+			double Frequency;
+
+			double BandWidth;
+
+			double TransPower;
+
+			double DurationTime;
+
+			double TransLoss;
+
+			char EcmStyle;
+
+			char AntennaPolarization;
+
+			double AntennaGain;
+		};
+
+		//软件无线电波形参数
+
+		struct WAVE_PARAMETER_RW 
+		{
+			//for ALL
+			unsigned short equipid;
+
+			unsigned short channel_number;
+
+			//HF
+			char local_addr;
+
+			char work_mode_HF;
+
+			char adaptive_switch;
+
+			char fixed_freq_rate;
+
+			char leap_freq_rate;
+
+			char netid;
+
+			char trans_mode_HF;
+
+			char freq_table_number;
+
+			char station_style;
+
+			char ciphered;
+
+
+			//413
+			char business_type;
+
+			char duplex_mode;
+
+			char trans_rate;
+
+			char interwine_mode;
+
+			char trans_mode_413;
+
+			unsigned short address;
+
+			//UHF
+			long work_freq;
+
+			char link_mode;
+
+			char work_mode_UHF;
+
+			char power_level;
+
+			char RAP;
+
+			//JIDS
+
+		};
+		//软件无线电参数
+
+		struct COMM_PARAMETERS_RW 
+		{
+			char BIT_type;
+
+			char equipment_status;
+
+			unsigned short channelNumber;
+
+			sequence<char> channelList;
+
+			sequence<char> wave_typeList;
+
+			sequence<WAVE_PARAMETER_RW> wave_parameter_rwList;
+
+			//unsigned short channel_number[256];//0-255
+			//char wave_type[256]; //0-8
+
+		};
+
+		 //RADAR传感器类接口
+
+		struct SENSOR_RADAR
+		{
+
+			unsigned short sensorid;
+
+			RADAR_PARAMETERS radar_parameters;// for RADAR
+
+		};
+
+		//COMM传感器类接口
+		struct SENSOR_COMM
+		{
+			unsigned short sensorid;
+
+			COMM_PARAMETERS comm_parameters;//for COMM
+
+			COMM_PARAMETERS_RW comm_parameters_rw;//for COMM
+
+		};
+
+		//JAM传感器类接口
+		struct SENSOR_JAM
+		{
+
+			unsigned short sensorid;
+
+			JAM_PARAMETERS jam_parameters;//for JAM
+
+		};
+
+		//INFRARED传感器类接口
+		struct SENSOR_INFRARED
+		{
+
+		       char Name[32];
+
+		       unsigned short Model;
+
+		};
+
+		//ESM传感器类接口
+		struct SENSOR_ESM
+		{
+		       char Name[32];
+
+		       unsigned short Model;
+
+		};
+		//传感器参数部分结束
+
+		//导弹指令类接口 导弹发射指令ID为1,导调收 [2：1]
+
+		const string MISSLE_REQ_TOPIC = "LHZS::VRFORCE_COMMAND::MISSLE_REQ";
+
+		struct MISSLE_REQ
+		{
+
+			unsigned short cmdId;//@key
+
+			unsigned short sendId;//发射导弹的平台的id
+
+			unsigned short targetId;// 被打的目标的id
+
+			DATE_OF_DATA dateOfUpdate;
+
+			long timeOfUpdate;//指令发射时间，距离当天的0点过去的毫秒数
+
+		};
+
+		
+		//航线改变类接口 航线改变指令，导调收[2：2]
+
+		const string PATH_CHANGE_REQ_TOPIC = "LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ";
+
+		struct PATH_CHANGE_REQ
+		{
+
+			unsigned short cmdId;//@key
+
+			unsigned short platId;//要改变航线的平台号
+
+			DATE_OF_DATA dateOfUpdate;
+
+			long timeOfUpdate;//指令发射时间，距离当天的0点过去的毫秒数
+
+			sequence<POS_DATA> PosList;//后续的航线的一系列控制点
+		};
+
+		//应答类接口 通用指令应答，比如导弹指令，导调发[2：3]
+
+		const string CMD_ACK_TOPIC = "LHZS::VRFORCE_COMMAND::CMD_ACK";
+
+		struct CMD_ACK
+		{
+
+			unsigned short cmdId;//@key
+
+			unsigned short result;//1成功 0失败
+
+			DATE_OF_DATA dateOfUpdate;
+
+			long timeOfUpdate;
+		};
+
+		//删除实体，导调收[2：4]
+
+		const string DELETE_ENTITY_REQ_TOPIC = "LHZS::VRFORCE_COMMAND::DELETE_ENTITY_REQ";
+
+		struct DELETE_ENTITY_REQ
+		{
+
+			unsigned short cmdId;//@key
+
+			unsigned short platId;//
+
+			DATE_OF_DATA dateOfUpdate;
+
+			long timeOfUpdate;
+		};
+
+		//改变传感器参数，导调收[2;5]
+
+		const string CHANGE_SENSORS_REQ_TOPIC = "LHZS::VRFORCE_COMMAND::CHANGE_SENSORS_REQ";
+
+		struct CHANGE_SENSORS_REQ
+		{
+
+			unsigned short cmdId;//@key
+
+			unsigned short platId;//
+		
+
+			boolean RadarFlg;
+			boolean CommFlg;
+			boolean JamFlg;
+			boolean InfraredFlg;
+			boolean EsmFlg;
+			
+			SENSOR_RADAR sensor_radar;
+
+			SENSOR_COMM sensor_comm;
+
+			SENSOR_JAM sensor_jam;
+
+			SENSOR_INFRARED sensor_infrared;
+
+			SENSOR_ESM sensor_esm;
+
+			DATE_OF_DATA dateOfUpdate;
+
+			long timeOfUpdate;
+		};
+
+	};
+};

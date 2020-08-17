@@ -1,0 +1,10 @@
+<component>
+	<id>repComp</id><!--component ID TODO-->
+	<name>testReplyMessage</name><!--component description TODO-->
+	<subSystem>null</subSystem><!--subSystem which the component belongs to TODO-->
+	<ddsInfos>
+		<!--<ddsInfo index="0" domainID="0" topic="example" recordMode="0"/>--><!--index & domainID & topic & recordMode TODO-->
+		<ddsInfo index="0" domainID="0" topic="CSHT::ENTITY" recordMode="0"/>
+	</ddsInfos>
+	<node>ComponentLib</node><!--component library node name -->
+</component>
