@@ -1,0 +1,67 @@
+module LHZS
+{
+    struct GEOGRAPHIC_POSITION                          //地理坐标
+    {
+        double              lon_f;                      //@key //弧度 范围-pi~0  西经， 0-pi 东经
+        double              lat_f;                      //弧度 范围-pi/2~0南纬， 0-pi/2北纬
+        double              alt_f;                      //单位：m
+    };
+
+    struct PLATFORM_VELOCITY                            //平台速度(以平台为中心)
+    {
+        double              platform_vx_f;              //@key  // m/s
+        double              platform_vy_f;              // m/s
+        double              platform_vz_f;              // m/s
+    };
+
+
+    struct TARGET_ATTRIBUTE_DATA
+    {
+        unsigned short                  conflict_flag_uh[4];            //@key
+        unsigned short                  target_type_e;                  //空海类型
+        unsigned short                  JEM_type_e;                     //微动特性
+        unsigned short                  identification_e;               //敌我属性
+        double                          ident_confidence_f;             //敌我属性置信度
+        unsigned short                  civil_military_e;               //军民属性 
+        double                          civil_military_conf_f;          //军民属性置信度
+        unsigned short                  target_class_e;                 //目标类型 
+        double                          class_confidence_f;             //目标类型置信度
+        unsigned short                  target_model_e;                 //目标型号 0未定义 eg.F16
+        double                          model_confidence_f;             //目标型号置信度
+        unsigned short                  target_nation_e;                //目标国籍 0未定义 eg.中国
+        double                          nation_confidence_f;            //目标国籍置信度
+        unsigned short                  target_rcs_e;                   //目标rcs 0未定义 eg.大中小
+        double                          rcs_confidence_f;               //目标rcs置信度
+    };
+
+   struct SDI_TRACK_REPORT
+    {
+        unsigned long                   platform_id_ul;                  //@key //预警机平台1X 无人机(ISAR)2X 无人机(雷达)3X 战斗机4X
+        unsigned long                   sdi_track_number_ul;             //航迹号
+        unsigned short                  radar_track_number_uh;           //radar航迹号
+        unsigned short                  ssr_track_number_uh;             //SSR航迹号
+        unsigned short                  esm_target_number_uh;            //ESM航迹号
+        unsigned short                  csm_target_number_uh;            //CSM航迹号
+        unsigned short                  ir_target_number_uh;             //IR航迹号
+        unsigned long                   icao_addr_ul;                    //ADS-B icao地址
+        unsigned long                   ais_mmsi_ul;                     //AIS用户标识码
+        char                            call_sign_c[16];                 //AIS呼号
+        unsigned short                  net_obj_addr_uh;
+        unsigned short                  track_status_e;                  //航迹状态，0未定义 1起始 2更新 
+        unsigned short                  track_quality_uh;                //航迹质量1~15
+        unsigned short                  track_source_e;                  //基础航迹源
+        GEOGRAPHIC_POSITION             target_geo_position;             //目标位置
+        PLATFORM_VELOCITY               target_velocity;                 //目标速度
+        double                          speed_f;                         //目标速度标量
+        double                          heading_f;                       //航向0~360，相对正北
+        unsigned short                  mission_type_e;                  //任务类型 eg.拦截，攻击
+        unsigned short                  threat_level_e;                  //威胁等级，
+        unsigned short                  formation_size_uh;               //编队中飞机数目
+        unsigned short                  maneuver_indicator_e;            //机动标识，0未定义 1机动 2非机动
+        unsigned long                   time_of_update_ul;               //时间（当天0点起总的毫秒时）
+        TARGET_ATTRIBUTE_DATA           target_attribute_data;           //目标属性信息
+        char                            spare_c[24];
+    };
+
+};
+
