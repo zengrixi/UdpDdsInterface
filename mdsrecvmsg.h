@@ -24,6 +24,8 @@ using namespace MDS;
 // 参数1为创建的监听类类名
 // 参数2为消息结构体名
 CustomLis_Create(EntityListener, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST);
+CustomLis_Create(TargetListener, LHZS::SDI_TRACK_REPORT);
+
 
 class MdsRecvMsg : public QThread, public AbstractComponent
 {

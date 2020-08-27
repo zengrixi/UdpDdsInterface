@@ -1,10 +1,12 @@
 #include "mainwindow.h"
-#include <QApplication>
 
-#include "app.h"
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QSettings>
+
+#include "app.h"
+#include "testinfo.h"
 
 //configuration file location
 QString softPath = ".";
@@ -14,13 +16,16 @@ QString readConfig();
 
 int main(int argc, char *argv[])
 {
+    TestInit();
     readConfig();
 
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
 
-    return a.exec();
+    auto result = a.exec();
+    TestFree();
+    return result;
 }
 
 QString readConfig()

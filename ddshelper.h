@@ -26,15 +26,13 @@ public:
 
 protected:
     virtual void run() Q_DECL_OVERRIDE;
-
-    void processMsg(MyMsg_t stMyMsg);
+    void processMsg(MY_MSG_STRU stMyMsg);
 
 private:
     DdsHelper();
     ~DdsHelper();
 
     QMutex _stopMutex;
-
     bool _bStop;
 };
 

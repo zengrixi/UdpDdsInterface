@@ -61,13 +61,17 @@ SOURCES += \
     IDL/Entity/lhzs-vrforce-entity.cxx \
     IDL/Entity/lhzs-vrforce-entityPlugin.cxx \
     IDL/Entity/lhzs-vrforce-entitySupport.cxx \
-    IDL/Command/lhzs-vrforce-command..cxx \
-    IDL/Command/lhzs-vrforce-command.Plugin.cxx \
-    IDL/Command/lhzs-vrforce-command.Support.cxx \
+    IDL/Command/lhzs-vrforce-command.cxx \
+    IDL/Command/lhzs-vrforce-commandPlugin.cxx \
+    IDL/Command/lhzs-vrforce-commandSupport.cxx \
     tcpsocket.cpp \
     app.cpp \
     savelog.cpp \
-    onworker.cpp
+    onworker.cpp \
+    IDL/Target/target.cxx \
+    IDL/Target/targetPlugin.cxx \
+    IDL/Target/targetSupport.cxx \
+    testinfo.cxx \
 
 HEADERS += \
         mainwindow.h \
@@ -81,18 +85,23 @@ HEADERS += \
     IDL/Entity/lhzs-vrforce-entity.h \
     IDL/Entity/lhzs-vrforce-entityPlugin.h \
     IDL/Entity/lhzs-vrforce-entitySupport.h \
-    IDL/Command/lhzs-vrforce-command..h \
-    IDL/Command/lhzs-vrforce-command.Plugin.h \
-    IDL/Command/lhzs-vrforce-command.Support.h \
+    IDL/Command/lhzs-vrforce-command.h \
+    IDL/Command/lhzs-vrforce-commandPlugin.h \
+    IDL/Command/lhzs-vrforce-commandSupport.h \
     tcpsocket.h \
     app.h \
     myhelper.h \
     savelog.h \
-    onworker.h
+    onworker.h \
+    IDL/Target/target.h \
+    IDL/Target/targetPlugin.h \
+    IDL/Target/targetSupport.h \
+    testinfo.h \
 
 FORMS += \
         mainwindow.ui
 
 DISTFILES += \
     IDL/Entity/lhzs-vrforce-entity.idl \
-    IDL/Command/lhzs-vrforce-command..idl
+    IDL/Command/lhzs-vrforce-command.idl \
+    IDL/Target/target.idl

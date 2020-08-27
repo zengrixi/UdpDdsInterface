@@ -15,18 +15,12 @@ OnWorker::~OnWorker()
 
 void OnWorker::onStartUdp()
 {
-    // 飞控软件通讯
-#if 1
     _pWRJ_Udp = new UdpHelper;
-    _pWRJ_Udp->udpInit("224.9.9.9", 9000);
-    _pWRJ_Udp->joinMulticastGroup();
-#endif
+    _pWRJ_Udp->Init("192.168.1.160", 9000);
 
-#if 1
     _pZDJ_Udp = new UdpHelper;
-    _pZDJ_Udp->udpInit("224.9.9.9", 6000);
-    _pZDJ_Udp->joinMulticastGroup();
-#endif
+    _pZDJ_Udp->Init("192.168.1.100", 8085);
+    _pZDJ_Udp->start();
 }
 
 /*****************************************************************************

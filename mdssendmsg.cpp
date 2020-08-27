@@ -4,6 +4,7 @@ MdsSendMsg::MdsSendMsg(): AbstractComponent()
 {
     _pUAV_Entity_StateList = Q_NULLPTR;
     _pCommand_PathChangeReq = Q_NULLPTR;
+    _pMessage_TrackReport = Q_NULLPTR;
     ddsInit();
 }
 
@@ -17,13 +18,19 @@ void MdsSendMsg::ddsInit()
     // 参数可以使用根目录下的组件配置文件名 softwareBlueprint.xml 中定义
     // 也可以自行传入参数 domainID, topic等
     _pUAV_Entity_StateList =
-         new PSCommunicator <PSComm_StructName(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST)> (0,
-         LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST_TOPIC);
-    _pCommand_PathChangeReq = new PSCommunicator <PSComm_StructName(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ)> (0,
-         LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ_TOPIC);
+    new PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST)> (0,
+    LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST_TOPIC);
+    
+    _pCommand_PathChangeReq = 
+    new PSCommunicator<PSComm_StructName(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ)> (0,
+    LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ_TOPIC);
+    
+    _pMessage_TrackReport = 
+    new PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)> (1,
+    "LHZS::SDI_TRACK_REPORT");
 }
 
-bool MdsSendMsg::onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST * pInstace)
+bool MdsSendMsg::onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST *pInstace)
 {
     QMutexLocker mutexLocker(&_mutex);
 
@@ -34,12 +41,19 @@ bool MdsSendMsg::onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_L
     // 第三个参数为探测接收端的超时时间，单位为秒，默认为2秒
     // 第四个参数为轮循探测接收端的周期，单位为微秒，默认为10微秒
     // 如不想等待有无接收端就发送消息则第二个参数为0
-    return _pUAV_Entity_StateList->publishMsg(pInstace, 1);
+    return _pUAV_Entity_StateList->publishMsg(pInstace, 0);
 }
 
-bool MdsSendMsg::onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ * pInstance)
+bool MdsSendMsg::onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
 {
     QMutexLocker mutexLocker(&_mutex);
 
-    return _pCommand_PathChangeReq->publishMsg(pInstance, 1);
+    return _pCommand_PathChangeReq->publishMsg(pInstance, 0);
+}
+
+bool MdsSendMsg::onSendMessageData(LHZS::SDI_TRACK_REPORT *pInstance)
+{
+    QMutexLocker mutexLocker(&_mutex);
+
+    return _pMessage_TrackReport->publishMsg(pInstance, 0);
 }

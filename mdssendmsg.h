@@ -36,6 +36,8 @@ public:
     // 发送指挥引导命令
     bool onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance);
 
+    bool onSendMessageData(LHZS::SDI_TRACK_REPORT *pInstance);
+
     // -----------------------------
 
 private:
@@ -50,6 +52,9 @@ private:
 
     // 指挥引导
     PSCommunicator<PSComm_StructName(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ)> *_pCommand_PathChangeReq;
+
+    // 目标指示
+    PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)> *_pMessage_TrackReport;
 
     // -----------------------------
 

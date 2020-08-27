@@ -17,46 +17,53 @@
 #include "commondef.h"
 #include "singleton.h"
 
+// 战斗机和目标的搜索范围
+static double g_distance = 500.0;
+
 class DataBase
 {
     SINGLETON(DataBase)
 public:
-    // 存实体数据
-    bool recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *entity);
+    // 实体毁伤状态枚举值
+    typedef enum ENTITY_DAMAGE_STATE
+    {
+        DamageNone,
+        DamageSlight,
+        DamageModerate,
+        DamageDestroyed,
+    }ENTITY_DAMAGE_STATE_ENUM;
 
-    // 释放已经实体数据
-    bool releaseEntity(int key);
-
-    // 实体拷贝
-    // 参数3为是否需要分配内存
-    void makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst, const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
-
-    // 实体信息写入到文件
-    void writeFile(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *entity);
-
-    // 消息处理
+    bool recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity);
+    void releaseEntity(int key);
+    void makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst, 
+        const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
     void processRecvData(int nDataType, void *pData);
     void processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance);
-
-    // 提取消息
-    MyMsg_t getMyMsg();
-
-    // 根据平台ID提取实体
+    void processMsg(LHZS::SDI_TRACK_REPORT *pInstance);
+    MY_MSG_STRU getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
-
+    QList<int> getTargetIDList();
+    
 private:
     DataBase();
     ~DataBase();
+    void selectTarget(ZDJ_POSITION_STATE_LIST_STRU *pZDJ_Entity);
 
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
-
+    // 用于存储被战斗机侦测到的目标编号
+    QList<int> _dbTargetID;
     // 用于存接收到的消息类型
-    QList<MyMsg_t> _qListMyMsgs;
-
-    QMutex _mutex;
-
-    QFile _entityInfoFile_;
+    QList<MY_MSG_STRU> _qListMyMsgs;
+    QMutex _entityMutex;
+    QMutex _msgMutex;
 };
+
+/*----------------------------------------------*
+ * 全局函数定义                                       *
+ *----------------------------------------------*/
+extern float htonf(float hostfloat);
+extern double radian(double d);
+extern double getDistance(double lat1, double lng1, double lat2, double lng2);
 
 #endif // DATABASE_H

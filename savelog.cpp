@@ -48,7 +48,7 @@ void Log(QtMsgType type, const QMessageLogContext &, const QString & msg)
     SaveLog::instance().save(content);
 }
 
-SaveLog::SaveLog(): QObject(nullptr)
+SaveLog::SaveLog(): QObject(Q_NULLPTR)
 {
     connect(this, SIGNAL(send(QString)), &SendLog::instance(), SLOT(send(QString)));
     _pFile = new QFile(this);

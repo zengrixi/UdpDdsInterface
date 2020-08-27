@@ -25,10 +25,12 @@ void MdsRecvMsg::run()
 
     // 创建发布/订阅通信器类对象，将某一消息结构体与消息主题进行绑定
     // Ps: 通信器本身即支持发送，也支持接收，支持自发自收
-    PSCommunicator <PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> *pMainRecvCom = nullptr;
+    PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> *pEntityRecvCom = nullptr;
+    PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)> *pTrackRecvCom = nullptr;
 
     // 创建自定义接收监听类对象
     EntityListener entityMsg;
+    TargetListener targetMsg;
 
     // 创建发布/订阅通信器类对象，将某一消息结构体与消息主题进行绑定
     // 参数可以使用根目录下的组件配置文件名 softwareBlueprint.xml 中定义
@@ -36,15 +38,25 @@ void MdsRecvMsg::run()
     unsigned int uiDomainID = 0;
     QString sTopicName = LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST_TOPIC;
 
-    pMainRecvCom = new PSCommunicator <PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> (uiDomainID,
-         sTopicName.toStdString(), true);
-    if (Q_NULLPTR == pMainRecvCom)
+    pEntityRecvCom = 
+    new PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> 
+    (uiDomainID, sTopicName.toStdString(), true);
+    if (Q_NULLPTR == pEntityRecvCom)
+    {
+        return;
+    }
+
+    pTrackRecvCom = 
+    new PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)>
+    (uiDomainID, "LHZS::SDI_TRACK_REPORT");
+    if ( Q_NULLPTR == pTrackRecvCom )
     {
         return;
     }
 
     // 调用订阅消息函数接口开始订阅消息
-    pMainRecvCom->subscribeMsg(&entityMsg);
+    pEntityRecvCom->subscribeMsg(&entityMsg);
+    pTrackRecvCom->subscribeMsg(&targetMsg);
 
     // 死循环保证线程不退出
     for (; ; )
@@ -61,11 +73,11 @@ void MdsRecvMsg::run()
     }
 
     // 线程退出前进行清理工作
-    delete pMainRecvCom;
+    delete pEntityRecvCom;
 }
 
 // 实现监听类对象的数据处理虚函数，该函数的内部实现功能将在接收到消息实例后执行。
-void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST & report)
+void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST &report)
 {
     for (int i = 0; i < report.entityList.length(); i++)
     {
@@ -78,4 +90,10 @@ void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_
         // 存储接收到的实体数据
         DataBase::instance().recordEntity(&e);
     }
+}
+
+void TargetListener::processData(const LHZS::SDI_TRACK_REPORT &report)
+{
+    LHZS::SDI_TRACK_REPORT lcTrackReport = report;
+    DataBase::instance().processRecvData(Recv_MsgType_Radar_TrackReport, &lcTrackReport);
 }
