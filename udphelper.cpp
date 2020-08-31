@@ -4,20 +4,35 @@
 #include <QDataStream>
 #include <QDateTime>
 
-#define _FEIKONG_ 1
-#define _ZDJ_ 1
+
+const static PACK_TYPE_STRU s_packType[] = 
+{
+    {ZDJ_PACK_HEAD, ZDJ_Object},
+    {XTTC_PACK_HEAD, XTTC_Object}
+};
+
+
+// 初始化连接对象
+const static MSG_PROCESS_STRU s_MsgProcess[] =
+{
+    {ZDJ_Object, ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF, Recv_MsgType_ZDJ_Entity_Pos, realTimeLocation_ZDJ},
+    {ZDJ_Object, ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET, Recv_MsgType_ZDJ_TrackReport, realTimeTrack_ZDJ}
+};
+
 
 bool g_zdj_init = false;// 因为战斗机Matlab原因必须先收到对方发过来的消息才能进行通讯,所以用个bool判断
 
+
 UdpHelper::UdpHelper(): QThread()
-{
-    _bInit = false;
-    _hostAddr.setAddress("127.0.0.1");
-    _nPort = 9999;
-    _pUdpSocket = Q_NULLPTR;
-    _eMsgType = NoneMsgType;
-    _eCommObject = None;
+    , _eCommObject(None_Object)
+    , _bStop(true)
+    , _bInit(false)
+    , _nPort(9999)
+    , _pUdpSocket(Q_NULLPTR)
+{  
+    _hostAddr.setAddress("127.0.0.1"); 
 }
+
 
 UdpHelper::~UdpHelper()
 {
@@ -26,12 +41,14 @@ UdpHelper::~UdpHelper()
     quit();
 }
 
+
 void UdpHelper::stop()
 {
     _stopMutex.lock();
     _bStop = true;
     _stopMutex.unlock();
 }
+
 
 /*****************************************************************************
  * 函 数 名  : UdpHelper.udpInit
@@ -79,24 +96,20 @@ void UdpHelper::Init(QString addr, quint16 port, int mode)
             break;
     }
 
-    // 通讯目标判断,用于判断后续协议解析
-    if ( "224.9.9.9" == _hostAddr.toString() || 9000 == _nPort )
-    {
-        _eCommObject = AHeadX_Space;
-    }
-    else if ( "192.168.1.100" == _hostAddr.toString() || 6000 == _nPort )
+    if ( "192.168.1.100" == _hostAddr.toString() && 8085 == _nPort )
     {
         _eMsgType = Send_MsgType_ZDJ_InitPosition; // 先给战斗机发送初始位置信息
-        _eCommObject = ZDJ_Cluster;
     }
     // 接收数据绑定
     connect(_pUdpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
 }
 
+
 void UdpHelper::broadcast()
 {
     
 }
+
 
 void UdpHelper::joinMulticastGroup()
 {
@@ -125,6 +138,7 @@ void UdpHelper::joinMulticastGroup()
     }
 }
 
+
 void UdpHelper::run()
 {
     if (!_bInit)
@@ -149,11 +163,6 @@ void UdpHelper::run()
         // 进行数据发送实现
         switch ( _eMsgType )
         {
-            case NoneMsgType :
-            {
-                
-                break;
-            }
             case Send_MsgType_Target_Position :
             {
                 sendTargetPositionState();
@@ -163,8 +172,14 @@ void UdpHelper::run()
             {
                 if ( !g_zdj_init )
                 {
-                    send_ZDJ_InitPosition();
-                    _eMsgType = Send_MsgType_Target_Position;
+                    if ( 8085 == _nPort )
+                    {
+                        continue;
+                    }
+                    if ( send_ZDJ_InitPosition() == 0 )
+                    {
+                        _eMsgType = Send_MsgType_Target_Position;
+                    }
                 }
                 break;
             }
@@ -173,6 +188,7 @@ void UdpHelper::run()
         }
     }
 }
+
 
 /*****************************************************************************
  * 函 数 名  : UdpHelper.sendTargetPositionState
@@ -183,9 +199,11 @@ void UdpHelper::run()
  * 输出参数  : 无
  * 返 回 值  : void
 *****************************************************************************/
-void UdpHelper::sendTargetPositionState()
+int UdpHelper::sendTargetPositionState()
 {
-    int i, count, size;
+    int i, size, id;
+    u_char count;
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
     QByteArray ba;
     QDataStream in(&ba, QIODevice::WriteOnly);// 往QByteArray中流入数据
 
@@ -194,58 +212,58 @@ void UdpHelper::sendTargetPositionState()
     in.setByteOrder(QDataStream::LittleEndian);
 #endif
 
-    QList<int> dbTargetID = DataBase::instance().getTargetIDList();
-    count = dbTargetID.size();
-    QList<LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> lEntityReportList;
-    
-    // 从已保存的实体列表中提取出目标信息
-    for (i = 0; i < count; i++)
-    {
-        int nPlatID = dbTargetID[i];
-
-        LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport =
-        DataBase::instance().getEntityReport(nPlatID);
-
-        if ( Q_NULLPTR == pEntityReport )
-        {
-            continue;
-        }
-
-        lEntityReportList.append(pEntityReport);
-    }
-    // 得到目标总数
-    count = lEntityReportList.count();
+    count = ZDJ_TARGET_COUNT;
 
     // 计算包长度
     size = sizeof(PACKAGE_HEAD_STRU) + sizeof(UINT8) +
     sizeof(TARGET_POSITION_STATE_STRU) * count + sizeof(UINT32);
     
-    in << 0xEEEEFFFF
+    in << ZDJ_PACK_HEAD
        << 0xAA
        << size
-       << count
-       << QDateTime::currentDateTime().toTime_t();// 流入当前时间戳
+       << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
+       << count;
     
     // 将提取出来的战斗机信息添加到包体中
     for (i = 0; i < count; i++)
     {
-        LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport = lEntityReportList[i];
-		in << (UINT32) pEntityReport->platId;
-		in << pEntityReport->geodeticLocationLat;
-		in << pEntityReport->geodeticLocationLon;
-		in << (double)0.01; // 噪声强度
+        id = g_ZDJ_TargetPlatID[i];
+        
+        pEntityReport = DataBase::instance().getEntityReport(id);
+
+        if ( Q_NULLPTR == pEntityReport )
+        {
+            count--;
+            continue;
+        }
+        
+		in << (UINT32) pEntityReport->platId
+		   << pEntityReport->geodeticLocationLat
+		   << pEntityReport->geodeticLocationLon
+		   << (double) 0.01; // 噪声强度
+    }
+
+    if ( 0 == count )
+    {
+        return -1;
     }
 
     // 添加包尾信息
-    in << 0x0A0D0A0D;
+    in << ZDJ_PACK_TAIL;
 
     _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
+
+    return 0;
 }
 
-void UdpHelper::send_ZDJ_InitPosition()
+
+int UdpHelper::send_ZDJ_InitPosition()
 {
-    int i, size, count;
+    int i, size, id;
+    u_char count;
     double dTemp;
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
+    
     QByteArray ba;
     QDataStream in(&ba, QIODevice::WriteOnly);
 
@@ -256,11 +274,11 @@ void UdpHelper::send_ZDJ_InitPosition()
 
     count = ZDJ_COUNT;
 
-    size = sizeof(PACKAGE_HEAD_STRU) + 1 + 
+    size = sizeof(PACKAGE_HEAD_STRU) + 4 + 1 + 
            (count*sizeof(ZDJ_POSITION_STATE_STRU)) + 4;
 
-    in << 0xEEEEFFFF
-       << 0xAA
+    in << ZDJ_PACK_HEAD
+       << 0xF1
        << size
        << count;
 
@@ -268,18 +286,31 @@ void UdpHelper::send_ZDJ_InitPosition()
     dTemp = 0;
     for (i = 0; i < count; i++)
     {
-        in << i
-		   << (double)2.21732
-		   << (double)0.438575
-           << dTemp
-           << dTemp
-	       << dTemp; // 总速度
+        id = g_ZDJ_nPlatID[i];
+
+        pEntityReport = DataBase::instance().getEntityReport(id);
+
+        if ( Q_NULLPTR == pEntityReport )
+        {
+            return -1;
+        }
+        
+        in << (UINT32) pEntityReport->platId
+		   << pEntityReport->geodeticLocationLon
+		   << pEntityReport->geodeticLocationLat
+           << pEntityReport->topographicVelocityX
+           << pEntityReport->topographicVelocityY
+	       << pEntityReport->topographicVelocityZ // 总速度
+	       << (double) 0.0;// 航向信息
     }
 
-    in << 0x0A0D0A0D;
+    in << ZDJ_PACK_TAIL;
 
     _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
+
+    return 0;
 }
+
 
 /*****************************************************************************
  * 函 数 名  : UdpHelper.parsePackage
@@ -292,51 +323,50 @@ void UdpHelper::send_ZDJ_InitPosition()
 *****************************************************************************/
 void UdpHelper::parsePackage(QByteArray ba)
 {
-    int size, result;
-    UINT32 tail;
+    int i, n, tailSize, packSize, result;
+    UINT32 tail, type;
     PACKAGE_HEAD_STRU packageHead;
 
     // 提取出包尾信息并截断
-    size = sizeof(tail);
-    QByteArray byteTail = ba.right(size);
-    memcpy(&tail, byteTail.data(), size);
-    ba.truncate(ba.size() - size);
+    packSize = ba.size();
+    tailSize = sizeof(tail);
+    
+    QByteArray byteTail = ba.right(tailSize);
+    memcpy(&tail, byteTail.data(), tailSize);
+    ba.truncate(packSize - tailSize);
 
     QDataStream out(ba);
     
-#if 0 // 确定是否需要设置大小端
+#if 1 // 确定是否需要设置大小端
     out.setFloatingPointPrecision(QDataStream::SinglePrecision);
     out.setByteOrder(QDataStream::LittleEndian);
+    tail = htonl(tail);
 #endif
 
     RESOLVER_STATE_ENUM eResolverState = PackageHead;
 
-    while ( out.atEnd() )
+    while ( !out.atEnd() )
     {
         switch ( eResolverState )
         {
             // 解析包头,过滤掉不需要的数据
             case PackageHead :
             {
-                // 不同的包头代表不同的单位
-                out >> packageHead.packHead;
-                if ( packageHead.packHead != 0xEEEEFFFF )
+                result = parseCommObject(&packageHead);
+                if ( !result )
                 {
-                    // 可能是空消息,用于获取对方端口
-                    g_zdj_init = true;
+                    qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包头单位类型解析错误.";
                     return;
                 }
                 
-                out >> packageHead.msgType;
-                if ( (packageHead.msgType != 0x01) &&
-                     (packageHead.msgType != 0x02) )
-                {
-                    return;
-                }
+                out >> type;
+                     
+                packageHead.msgType = type;
                      
                 out >> packageHead.packSize;
-                if ( 0x0 == packageHead.packSize )
+                if ( packSize != packageHead.packSize )
                 {
+                    qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包大小验证错误.";
                     return;
                 }
                 
@@ -346,21 +376,26 @@ void UdpHelper::parsePackage(QByteArray ba)
             // 根据包头的消息类型解析包体
             case PackageBody :
             {
-                result = parsePackageBody(packageHead.msgType, out);
-                if ( -1 == result )
+                n = sizeof(s_MsgProcess) / sizeof(s_MsgProcess[0]);
+                for (i = 0; i < n; i++)
                 {
-                    // 包处理错误
-                    return;
+                    if ( s_MsgProcess[i].commobj == _eCommObject &&
+                         s_MsgProcess[i].msgType == type)
+                    {
+                        s_MsgProcess[i].processData(s_MsgProcess[i].allType, out);
+                        
+                        eResolverState = End;
+                        break;
+                    }
                 }
 
-                eResolverState = End;
-                break;
+                qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"未知消息,无法处理.";
+                return;
             }
             // 处理了包头消息后先验证包尾
             case PackageTail :
             {
-                out >> tail;
-                if ( tail != 0x0A0D0A0D )
+                if ( tail != ZDJ_PACK_TAIL )
                 {
                     qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包尾验证错误.";
                     return;
@@ -369,101 +404,38 @@ void UdpHelper::parsePackage(QByteArray ba)
                 break;
             }
             default:
-            {
-                qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"解包错误.";                
+            {               
                 return;
             }
         }
     }   
 }
 
-/*****************************************************************************
- * 函 数 名  : UdpHelper.parsePackageBody
- * 负 责 人  : 曾日希
- * 创建日期  : 2020年8月26日
- * 函数功能  : 根据数据类型对数据流进行解析
- * 输入参数  : UINT32 type              数据类型
-               QDataStream &dataStream  数据流
- * 输出参数  : 无
- * 返 回 值  : int
-*****************************************************************************/
-int UdpHelper::parsePackageBody(UINT32 type, QDataStream &out)
+
+int UdpHelper::parseCommObject(PACKAGE_HEAD_STRU *pHead)
 {
-    int i, count;
-    
-    switch ( type )
+    if ( !pHead )
     {
-        case Recv_MsgType_ZDJ_Entity_Pos_List :
-        {
-            ZDJ_POSITION_STATE_LIST_STRU instance;
-
-            out >> instance.timestamp;
-            out >> count;
-            instance.count = count;
-
-            instance.pPositionState = Q_NULLPTR;
-            if ( count > 0 )
-            {
-                instance.pPositionState = 
-                (ZDJ_POSITION_STATE_STRU *)malloc(sizeof(ZDJ_POSITION_STATE_STRU)*count);
-            }
-
-            for (i = 0; i < count; i++)
-            {
-                out >> instance.pPositionState[i].id;
-                out >> instance.pPositionState[i].pos.lon_f;
-                out >> instance.pPositionState[i].pos.lat_f;
-                out >> instance.pPositionState[i].velocity.vel_x_f;
-                out >> instance.pPositionState[i].velocity.vel_y_f;
-                out >> instance.pPositionState[i].course_f;
-            }
-
-            DataBase::instance().processRecvData(type, &instance);
-            // 在处理消息后直接释放内存
-            if ( Q_NULLPTR != instance.pPositionState )
-            {
-                free(instance.pPositionState);
-            }
-            break;
-        }
-        case Recv_MsgType_ZDJ_TrackReport :
-        {
-            ZDJ_TARGET_TRACK_LIST_STRU instance;
-
-            out >> instance.timestamp;
-            out >> instance.targetID;
-            out >> count;
-            instance.count = count;
-
-            instance.pTrackReport = Q_NULLPTR;
-            if ( count > 0 )
-            {
-                instance.pTrackReport = 
-                (ZDJ_TARGET_POS_STRU *)malloc(sizeof(ZDJ_TARGET_POS_STRU)*count);
-            }
-
-            for (i = 0; i < count; i++)
-            {
-                out >> instance.pTrackReport[i].trackNum;
-                out >> instance.pTrackReport[i].pos.lon_f;
-                out >> instance.pTrackReport[i].pos.lat_f;
-                out >> instance.pTrackReport[i].err;
-            }
-
-            DataBase::instance().processRecvData(type, &instance);
-            if ( Q_NULLPTR != instance.pTrackReport )
-            {
-                free(instance.pTrackReport);
-            }
-            break;
-        }
-        default:
-        {
-            qDebug()<<"文件:"<<__FILE__<<"行:"  << __LINE__<<"未知消息.";
-            break;
-        }
+        return -1;
     }
+
+    int i, n;
+
+    // 判断单位
+    n = sizeof(s_packType) / sizeof(s_packType[0]);
+    for (i = 0; i < n; i++)
+    {
+        if ( s_packType[i].type == pHead->packHead )
+        {
+            _eCommObject = s_packType[i].commobj;
+
+            return 0;
+        } 
+    }
+
+    return -1;
 }
+
 
 void UdpHelper::onReadyRead()
 {
@@ -478,23 +450,10 @@ void UdpHelper::onReadyRead()
             continue;
         }
 
-        switch ( _eCommObject )
-        {
-            case AHeadX_Space :
-            {
-                parseAHeadXSpace(ba);
-                break;
-            }
-            case ZDJ_Cluster :
-            {
-                parsePackage(ba);
-                break;
-            }
-            default:
-                break;
-        }
+        parsePackage(ba);
     }
 }
+
 
 /*****************************************************************************
  * 函 数 名  : UdpHelper.parseAHeadXSpace

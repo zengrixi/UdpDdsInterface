@@ -42,17 +42,13 @@ public:
     void processMsg(LHZS::SDI_TRACK_REPORT *pInstance);
     MY_MSG_STRU getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
-    QList<int> getTargetIDList();
     
 private:
     DataBase();
     ~DataBase();
-    void selectTarget(ZDJ_POSITION_STATE_LIST_STRU *pZDJ_Entity);
 
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
-    // 用于存储被战斗机侦测到的目标编号
-    QList<int> _dbTargetID;
     // 用于存接收到的消息类型
     QList<MY_MSG_STRU> _qListMyMsgs;
     QMutex _entityMutex;
@@ -63,7 +59,10 @@ private:
  * 全局函数定义                                       *
  *----------------------------------------------*/
 extern float htonf(float hostfloat);
-extern double radian(double d);
+inline double radian(double d);
 extern double getDistance(double lat1, double lng1, double lat2, double lng2);
+
+void realTimeLocation_ZDJ(UINT32 type, QDataStream &out);
+void realTimeTrack_ZDJ(UINT32 type, QDataStream &out);
 
 #endif // DATABASE_H

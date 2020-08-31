@@ -43,32 +43,49 @@ typedef unsigned long long  UINT64;
 // 战斗机平台ID
 static const int g_ZDJ_nPlatID[] = 
 {
-    3, 7, 73, 36, 31, 34, 70, 75,
-    33, 35, 76, 71, 32, 37
+    313, 314, 315, 316, 317, 38, 
+    39, 310, 312, 3, 34, 31, 35
 };
 // 战斗机目标PlatID
 static const int g_ZDJ_TargetPlatID[] =
 {
-    122, 110, 101, 131, 124, 130,
-    120, 112, 121, 123, 111, 113
+    114, 117, 115, 116, 110,
+    112, 111, 113, 119, 118
 };
 
 /*----------------------------------------------*
  * 全局枚举定义                                       *
  *----------------------------------------------*/
-// 导调DDS消息类型
-typedef enum NET_MSG
+// 通讯目标单位
+typedef enum _COMMAND_OBJECT
 {
-    NET_MsgType_None = 0,
+    WRJ_Object,
+    ZDJ_Object,
+    XTTC_Object,
+    None_Object,
+}COMMAND_OBJECT_ENUM;
+
+
+typedef enum _MSG_TYPE_ALL
+{
+    Recv_MsgType_WRJ_Entity_Pos,                    // 无人机自身位置信息
+    Recv_MsgType_ZDJ_Entity_Pos,                    // 战斗机自身实时位置
+    Recv_MsgType_ZDJ_TrackReport,                   // 战斗机目标实时位置
+    DDS_MsgType_Radar_TrackReport                   // 雷达模拟器目标航机
+}MSG_TYPE_ALL_ENUM;
+    
+// 导调DDS消息类型
+typedef enum _NET_MSG
+{
+    NET_MsgType_PathChangeReq, //指挥引导  1:7
+    NET_MsgType_TrackReport,
     NET_MsgType_UavCreteEntity = 10000, //创建无人机
 
     NET_MsgType_LaunchMissile, //发射导弹
 
-    NET_MsgType_PathChangeReq, //指挥引导  1:7
 
     NET_MsgType_MissileFireReq, //远程制导  4:3
 
-    NET_MsgType_TrackReport,
 
     NET_MsgType_CommandAndGuidance, //指挥引导  1:42
 
@@ -114,62 +131,8 @@ enum TESTTYPE
     sendFighterTarget
 };
 
-// 消息类型
-typedef enum DDS_MSG
-{
-    DDS_MsgType_Command_MissleReq = 1000,
-    DDS_MsgType_Command_PathChangeReq,
-    DDS_MsgType_Command_CMD_ACK,
-    DDS_MsgType_Command_DeleteEntity_Req,
-    DDS_MsgType_Command_ChangeSensor_Req,
-
-    DDS_MsgType_Control_STATUS = 2000,
-    DDS_MsgType_Control_COMMAND_REQ,
-    DDS_MsgType_Control_COMMAND_ACK,
-
-    DDS_MsgType_Entity_ENTITYSTATE_REPORT_LIST = 3000,
-    DDS_MsgType_Entity_UAV_ENTITYSTATE_REPORT_LIST,
-
-    DDS_MsgType_Guide_CREATE_CHANNEL = 4000,
-    DDS_MsgType_Guide_CANCEL_CHANNEL,
-    DDS_MsgType_Guide_MISSILE_FIRE_REQ,
-    DDS_MsgType_Guide_MISSILE_FIRE_ACK,
-    DDS_MsgType_Guide_REMOTE_GUIDE_MISSILE,
-    DDS_MsgType_Guide_DETECT_TO_MISSILE,
-
-    DDS_MsgType_Interference_Radar_RfState = 5000,
-    DDS_MsgType_Interference_Comm_RfState,
-    DDS_MsgType_Interference_SafeRegionByJam_Struct,
-    DDS_MsgType_Interference_AttackGuide_Struct,
-    DDS_MsgType_Interference_RadarRfCoord,
-    DDS_MsgType_Interference_CommRfCoord,
-
-    DDS_MsgType_Message_MSGHEAD = 6000,
-    DDS_MsgType_Message_S_MSG,
-    DDS_MsgType_Message_ZD_MSG,
-    DDS_MsgType_Message_NORMAL_MSG,
-
-    DDS_MsgType_Message_DIRECT_GUIDE = 7000,
-
-    DDS_MsgType_Message_TARGET_INDICATE = 8000,
-
-    DDS_MsgType_Message_SENSOR_RW = 9000,
-
-    DDS_MsgType_COOPERATE_POSITION = 10000
-
-}DDS_MSG_ENUM;
-
-// 从各个平台接收的消息类型
-typedef enum RECV_MSGTYPE
-{
-    Recv_MsgType_WRJ_Entity_Pos,                // 从飞控盒子接收的无人机位置信息
-    Recv_MsgType_ZDJ_Entity_Pos_List = 0x1,     // 战斗机实时位置信息
-    Recv_MsgType_ZDJ_TrackReport,               // 战斗机目标实时航迹
-    Recv_MsgType_Radar_TrackReport,             // 雷达模拟器目标航迹
-}RECV_MSGTYPE_ENUM;
-
 // Socket发送消息类型
-typedef enum SOCK_SEND_MSGTYPE
+typedef enum _SOCK_SEND_MSGTYPE
 {
     NoneMsgType,
     Send_MsgType_ZDJ_InitPosition,              // 战斗机初始位置信息
@@ -181,7 +144,7 @@ typedef enum SOCK_SEND_MSGTYPE
  *----------------------------------------------*/
 #pragma pack(1)
 // 无人机位置
-typedef struct WRJ_POS
+typedef struct _WRJ_POS
 {
     INT32 lon;
     INT32 lat;
@@ -189,7 +152,7 @@ typedef struct WRJ_POS
 }WRJ_POS_STRU;
 
 // 无人机姿态
-typedef struct WRJ_ATTITUDE
+typedef struct _WRJ_ATTITUDE
 {
     INT16 yaw;
     INT16 pitch;
@@ -197,28 +160,28 @@ typedef struct WRJ_ATTITUDE
 }WRJ_ATTITUDE_STRU;
 
 // 战斗机位置
-typedef struct ZDJ_POS
+typedef struct _ZDJ_POS
 {
     double lon_f;
     double lat_f;       
 }ZDJ_POS_STRU;
 
 // 战斗机速度
-typedef struct ZDJ_VELOCITY
+typedef struct _ZDJ_VELOCITY
 {
     double vel_x_f;// 速度x
     double vel_y_f;// 速度y      
 }ZDJ_VELOCITY_STRU;
 
 // 无人机数据帧头
-typedef struct FRAME_HEAD
+typedef struct _FRAME_HEAD
 {
     UINT8 first;
     UINT8 second;
 }FRAME_HEAD_STRU;
 
 // 无人机位置信息
-typedef struct DATA_FRAME
+typedef struct _DATA_FRAME
 {
     UINT8 dataID;
     UINT8 dataLength;
@@ -228,14 +191,14 @@ typedef struct DATA_FRAME
 }DATA_FRAME_STRU;
 
 // 包尾数据校验
-typedef struct CRC_CHECK
+typedef struct _CRC_CHECK
 {
     UINT8 first;
     UINT8 second;
 }CRC_CHECK_STRU;
     
 // 飞控平台接收的无人机位置信息
-typedef struct WRJ_POSITION_STATE
+typedef struct _WRJ_POSITION_STATE
 {
     FRAME_HEAD_STRU frameHead;
     UINT8 packgeLen;
@@ -244,7 +207,7 @@ typedef struct WRJ_POSITION_STATE
 }WRJ_POSITION_STATE_STRU;
 
 // 数据包头
-typedef struct PACKAGE_HEAD
+typedef struct _PACKAGE_HEAD
 {
     UINT32 packHead;
     UINT32 msgType;
@@ -252,54 +215,53 @@ typedef struct PACKAGE_HEAD
 }PACKAGE_HEAD_STRU;
 
 // ZDJ位置信息
-typedef struct ZDJ_POSITION_STATE
+typedef struct _ZDJ_POSITION_STATE
 {
-    UINT8 id;
+    UINT32 id;
     ZDJ_POS_STRU pos;// 经纬
     ZDJ_VELOCITY_STRU velocity;// 速度
     double course_f;// 航向
 }ZDJ_POSITION_STATE_STRU;
 
 // ZDJ编队实时位置姿态信息
-typedef struct ZDJ_POSITION_STATE_LIST
+typedef struct _ZDJ_POSITION_STATE_LIST
 {
-    PACKAGE_HEAD packageHead;
-    INT32 timestamp;
+    _PACKAGE_HEAD packageHead;
+    UINT32 timestamp;
     UINT8 count;
     ZDJ_POSITION_STATE_STRU *pPositionState;
     UINT32 packTail;
 }ZDJ_POSITION_STATE_LIST_STRU;
 
 // 航迹点
-typedef struct ZDJ_TARGET_POS
+typedef struct _ZDJ_TARGET_POS
 {
-    UINT16 trackNum;// 航迹号
+    UINT32 id;
     ZDJ_POS_STRU pos;// 经纬
     double err;// 距离误差      
 }ZDJ_TARGET_POS_STRU;
 
 // ZDJ目标实时航迹
-typedef struct ZDJ_TARGET_TRACK_LIST
+typedef struct _ZDJ_TARGET_TRACK_LIST
 {
-    PACKAGE_HEAD packageHead;
+    _PACKAGE_HEAD packageHead;
     UINT32 timestamp;
-    UINT32 targetID;
     UINT8 count;
     ZDJ_TARGET_POS_STRU *pTrackReport;
     UINT32 packTail;
 }ZDJ_TARGET_TRACK_LIST_STRU;
 
 // ZDJ初始位置姿态
-typedef struct ZDJ_INIT_POSITION_STATE
+typedef struct _ZDJ_INIT_POSITION_STATE
 {
-    PACKAGE_HEAD packageHead;
+    _PACKAGE_HEAD packageHead;
     UINT8 count;
     ZDJ_POSITION_STATE_STRU *pPositionState;
     UINT32 packTail;
 }ZDJ_INIT_POSITION_STATE_STRU;
 
 // ZDJ目标信息
-typedef struct TARGET_POSITION_STATE
+typedef struct _TARGET_POSITION_STATE
 {
     UINT32 id;
     ZDJ_POS_STRU pos;
@@ -307,7 +269,7 @@ typedef struct TARGET_POSITION_STATE
 }TARGET_POSITION_STATE_STRU;
 
 // ZDJ目标实时位置信息
-typedef struct TARGET_POSITION_STATE_LIST
+typedef struct _TARGET_POSITION_STATE_LIST
 {
     PACKAGE_HEAD_STRU packageHead;
     UINT8 count;
@@ -316,7 +278,7 @@ typedef struct TARGET_POSITION_STATE_LIST
 }TARGET_POSITION_STATE_LIST_STRU;
 
 // 数据接收结构体
-typedef struct MY_MSG
+typedef struct _MY_MSG
 {
     NET_MSG_ENUM eType;
     void* pBuf;          

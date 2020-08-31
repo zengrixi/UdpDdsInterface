@@ -95,5 +95,5 @@ void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_
 void TargetListener::processData(const LHZS::SDI_TRACK_REPORT &report)
 {
     LHZS::SDI_TRACK_REPORT lcTrackReport = report;
-    DataBase::instance().processRecvData(Recv_MsgType_Radar_TrackReport, &lcTrackReport);
+    DataBase::instance().processRecvData(DDS_MsgType_Radar_TrackReport, &lcTrackReport);
 }
