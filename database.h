@@ -62,7 +62,7 @@ extern float htonf(float hostfloat);
 inline double radian(double d);
 extern double getDistance(double lat1, double lng1, double lat2, double lng2);
 
-void realTimeLocation_ZDJ(UINT32 type, QDataStream &out);
-void realTimeTrack_ZDJ(UINT32 type, QDataStream &out);
+void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out);
+void Recv_ZDJ_RealTimeLocationTarget(UINT32 type, QDataStream &out);
 
 #endif // DATABASE_H

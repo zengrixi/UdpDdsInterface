@@ -310,12 +310,12 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
     double dst = 2 * asin((sqrt(pow(sin(a / 2), 2) + cos(radLat1) * cos(radLat2) * pow(sin(b / 2), 2) )));
 
     dst = dst * EARTH_RADIUS;
-    dst= round(dst * 10000) / 10000;
+    dst = round(dst * 10000) / 10000;
 
     return dst;// 单位：公里
 }
 
-void realTimeLocation_ZDJ(UINT32 type, QDataStream &out)
+void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out)
 {
     int i, size;
     u_char count;
@@ -362,7 +362,7 @@ void realTimeLocation_ZDJ(UINT32 type, QDataStream &out)
     free(p);
 }
 
-void realTimeTrack_ZDJ(UINT32 type, QDataStream &out)
+void Recv_ZDJ_RealTimeLocationTarget(UINT32 type, QDataStream &out)
 {
     int i, size;
     u_char count;

@@ -134,7 +134,7 @@ enum TESTTYPE
 // Socket发送消息类型
 typedef enum _SOCK_SEND_MSGTYPE
 {
-    NoneMsgType,
+    None_MsgType,
     Send_MsgType_ZDJ_InitPosition,              // 战斗机初始位置信息
     Send_MsgType_Target_Position,               // 战斗机目标实时位置
 }SOCK_SEND_MSGTYPE_ENUM;
@@ -226,7 +226,7 @@ typedef struct _ZDJ_POSITION_STATE
 // ZDJ编队实时位置姿态信息
 typedef struct _ZDJ_POSITION_STATE_LIST
 {
-    _PACKAGE_HEAD packageHead;
+    PACKAGE_HEAD_STRU packageHead;
     UINT32 timestamp;
     UINT8 count;
     ZDJ_POSITION_STATE_STRU *pPositionState;
@@ -244,7 +244,7 @@ typedef struct _ZDJ_TARGET_POS
 // ZDJ目标实时航迹
 typedef struct _ZDJ_TARGET_TRACK_LIST
 {
-    _PACKAGE_HEAD packageHead;
+    PACKAGE_HEAD_STRU packageHead;
     UINT32 timestamp;
     UINT8 count;
     ZDJ_TARGET_POS_STRU *pTrackReport;
@@ -254,7 +254,7 @@ typedef struct _ZDJ_TARGET_TRACK_LIST
 // ZDJ初始位置姿态
 typedef struct _ZDJ_INIT_POSITION_STATE
 {
-    _PACKAGE_HEAD packageHead;
+    PACKAGE_HEAD_STRU packageHead;
     UINT8 count;
     ZDJ_POSITION_STATE_STRU *pPositionState;
     UINT32 packTail;

@@ -15,12 +15,22 @@ const static PACK_TYPE_STRU s_packType[] =
 // 初始化连接对象
 const static MSG_PROCESS_STRU s_MsgProcess[] =
 {
-    {ZDJ_Object, ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF, Recv_MsgType_ZDJ_Entity_Pos, realTimeLocation_ZDJ},
-    {ZDJ_Object, ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET, Recv_MsgType_ZDJ_TrackReport, realTimeTrack_ZDJ}
+    {
+        ZDJ_Object, 
+        ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF, 
+        Recv_MsgType_ZDJ_Entity_Pos, 
+        Recv_ZDJ_RealTimeLocation
+    },
+    {
+        ZDJ_Object, 
+        ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET, 
+        Recv_MsgType_ZDJ_TrackReport, 
+        Recv_ZDJ_RealTimeLocationTarget
+    }
 };
 
 
-bool g_zdj_init = false;// 因为战斗机Matlab原因必须先收到对方发过来的消息才能进行通讯,所以用个bool判断
+bool g_zdj_init = true;
 
 
 UdpHelper::UdpHelper(): QThread()
@@ -29,6 +39,7 @@ UdpHelper::UdpHelper(): QThread()
     , _bInit(false)
     , _nPort(9999)
     , _pUdpSocket(Q_NULLPTR)
+    , _eMsgType(None_MsgType)
 {  
     _hostAddr.setAddress("127.0.0.1"); 
 }
@@ -133,7 +144,7 @@ void UdpHelper::joinMulticastGroup()
     {
         _bInit = false;
         _pUdpSocket->deleteLater();
-        qDebug() << "加入组播失败！";
+        qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"加入组播失败.";
         return;
     }
 }
@@ -160,33 +171,41 @@ void UdpHelper::run()
         }
         _stopMutex.unlock();
 
-        // 进行数据发送实现
-        switch ( _eMsgType )
+        sendMsg();
+    }
+}
+
+
+void UdpHelper::sendMsg()
+{
+    switch ( _eCommObject )
+    {
+        case WRJ_Object :
         {
-            case Send_MsgType_Target_Position :
-            {
-                sendTargetPositionState();
-                break;
-            }
-            case Send_MsgType_ZDJ_InitPosition :
-            {
-                if ( !g_zdj_init )
-                {
-                    if ( 8085 == _nPort )
-                    {
-                        continue;
-                    }
-                    if ( send_ZDJ_InitPosition() == 0 )
-                    {
-                        _eMsgType = Send_MsgType_Target_Position;
-                    }
-                }
-                break;
-            }
-            default:
-                break;
+            
+            break;
+        }
+        case ZDJ_Object :
+        {
+            sendMsg2ZDJ();
+            break;
+        }
+        default:
+    }
+}
+
+
+void UdpHelper::sendMsg2ZDJ()
+{
+    if ( g_zdj_init )
+    {
+        if ( send_ZDJ_InitPosition() == 0 )
+        {
+            g_zdj_init = false;
         }
     }
+
+    sendTargetPositionState();
 }
 
 
@@ -261,7 +280,6 @@ int UdpHelper::send_ZDJ_InitPosition()
 {
     int i, size, id;
     u_char count;
-    double dTemp;
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
     
     QByteArray ba;
@@ -282,8 +300,6 @@ int UdpHelper::send_ZDJ_InitPosition()
        << size
        << count;
 
-    /* comment by 曾日希, 2020-08-27, Mantis号:s, 原因:目前初始位置为测试值. */
-    dTemp = 0;
     for (i = 0; i < count; i++)
     {
         id = g_ZDJ_nPlatID[i];
@@ -324,102 +340,108 @@ int UdpHelper::send_ZDJ_InitPosition()
 void UdpHelper::parsePackage(QByteArray ba)
 {
     int i, n, tailSize, packSize, result;
-    UINT32 tail, type;
+    UINT32 type;
+    
     PACKAGE_HEAD_STRU packageHead;
+    MEMZERO(&packageHead, sizeof(packageHead));
 
-    // 提取出包尾信息并截断
+    // 包尾验证
     packSize = ba.size();
-    tailSize = sizeof(tail);
+    tailSize = sizeof(UINT32);
     
     QByteArray byteTail = ba.right(tailSize);
-    memcpy(&tail, byteTail.data(), tailSize);
+
+    result = parseTail((u_char *) byteTail.data());
+    if ( -1 == result )
+    {
+        qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包尾验证错误.";
+        return;
+    }
+
     ba.truncate(packSize - tailSize);
+    
+    if ( 1 == result )
+    {
+        out.setFloatingPointPrecision(QDataStream::SinglePrecision);
+        out.setByteOrder(QDataStream::LittleEndian);
+    }
 
     QDataStream out(ba);
-    
-#if 1 // 确定是否需要设置大小端
-    out.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    out.setByteOrder(QDataStream::LittleEndian);
-    tail = htonl(tail);
-#endif
 
-    RESOLVER_STATE_ENUM eResolverState = PackageHead;
+    // 解析包头
+    result = parseHead(out, &packageHead);
+    if ( !result )
+    {
+        qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包头单位类型解析错误.";
+        return;
+    }
+    
+    if ( packSize != packageHead.packSize )
+    {
+        qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包大小验证错误.";
+        return;
+    }
 
     while ( !out.atEnd() )
     {
-        switch ( eResolverState )
+        n = sizeof(s_MsgProcess) / sizeof(s_MsgProcess[0]);
+        for (i = 0; i < n; i++)
         {
-            // 解析包头,过滤掉不需要的数据
-            case PackageHead :
+            if ( s_MsgProcess[i].commobj == _eCommObject &&
+                 s_MsgProcess[i].msgType == type)
             {
-                result = parseCommObject(&packageHead);
-                if ( !result )
-                {
-                    qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包头单位类型解析错误.";
-                    return;
-                }
+                s_MsgProcess[i].processData(s_MsgProcess[i].allType, out);
                 
-                out >> type;
-                     
-                packageHead.msgType = type;
-                     
-                out >> packageHead.packSize;
-                if ( packSize != packageHead.packSize )
-                {
-                    qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包大小验证错误.";
-                    return;
-                }
-                
-                eResolverState = PackageTail;
                 break;
-            }
-            // 根据包头的消息类型解析包体
-            case PackageBody :
-            {
-                n = sizeof(s_MsgProcess) / sizeof(s_MsgProcess[0]);
-                for (i = 0; i < n; i++)
-                {
-                    if ( s_MsgProcess[i].commobj == _eCommObject &&
-                         s_MsgProcess[i].msgType == type)
-                    {
-                        s_MsgProcess[i].processData(s_MsgProcess[i].allType, out);
-                        
-                        eResolverState = End;
-                        break;
-                    }
-                }
-
-                qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"未知消息,无法处理.";
-                return;
-            }
-            // 处理了包头消息后先验证包尾
-            case PackageTail :
-            {
-                if ( tail != ZDJ_PACK_TAIL )
-                {
-                    qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包尾验证错误.";
-                    return;
-                }
-                eResolverState = PackageBody;
-                break;
-            }
-            default:
-            {               
-                return;
             }
         }
     }   
 }
 
 
-int UdpHelper::parseCommObject(PACKAGE_HEAD_STRU *pHead)
+/*****************************************************************************
+ * 函 数 名  : UdpHelper.parseTail
+ * 负 责 人  : 曾日希
+ * 创建日期  : 2020年8月31日
+ * 函数功能  : 验证包尾信息是否正确并判断大小端
+ * 输入参数  : u_char *p  四个字节包尾信息
+ * 输出参数  : 无
+ * 返 回 值  : int 0 默认 1 大端 -1 错误
+*****************************************************************************/
+int UdpHelper::parseTail(u_char *p)
 {
-    if ( !pHead )
+    UINT32 tail;
+
+    memcpy(&tail, p, sizeof(tail));
+
+    if ( tail == (UINT32) 0x0A0D0A0D )
     {
-        return -1;
+        return 0;
     }
 
+    if ( htonl(tail) == (UINT32) 0x0A0D0A0D )
+    {
+        return 1;
+    }
+
+    return -1;
+}
+
+
+/*****************************************************************************
+ * 函 数 名  : UdpHelper.parseCommObject
+ * 负 责 人  : 曾日希
+ * 创建日期  : 2020年9月1日
+ * 函数功能  : 处理包头信息
+ * 输入参数  : PACKAGE_HEAD_STRU *pHead  包头
+ * 输出参数  : 无
+ * 返 回 值  : int
+*****************************************************************************/
+int UdpHelper::parseHead(QDataStream &out, PACKAGE_HEAD_STRU *pHead)
+{
     int i, n;
+
+    out >> pHead->packHead;
 
     // 判断单位
     n = sizeof(s_packType) / sizeof(s_packType[0]);
@@ -429,6 +451,9 @@ int UdpHelper::parseCommObject(PACKAGE_HEAD_STRU *pHead)
         {
             _eCommObject = s_packType[i].commobj;
 
+            out >> pHead->msgType;
+            out >> pHead->packSize;
+            
             return 0;
         } 
     }
@@ -452,97 +477,5 @@ void UdpHelper::onReadyRead()
 
         parsePackage(ba);
     }
-}
-
-
-/*****************************************************************************
- * 函 数 名  : UdpHelper.parseAHeadXSpace
- * 负 责 人  : 曾日希
- * 创建日期  : 2020年8月26日
- * 函数功能  : 地面站和指控接口协议解析
- * 输入参数  : QByteArray byteArray  接收到的数据包
- * 输出参数  : 无
- * 返 回 值  : void
-*****************************************************************************/
-void UdpHelper::parseAHeadXSpace(QByteArray byteArray)
-{
-    INT8 chSize;
-    int i, nCount;
-    
-    QDataStream dataStream(byteArray);
-    dataStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    dataStream.setByteOrder(QDataStream::LittleEndian);
-    WRJ_POSITION_STATE_STRU wrj_positionState;
-    RESOLVER_STATE_ENUM eResolverState = PackageHead;
-
-    while ( !dataStream.atEnd() )
-    {
-        switch ( eResolverState )
-        {
-            case PackageHead :
-            {
-                dataStream >> wrj_positionState.frameHead.first;
-                dataStream >> wrj_positionState.frameHead.second;
-                if ( (0xAA == wrj_positionState.frameHead.first) && 
-                     (0x55 == wrj_positionState.frameHead.second) )
-                {
-                    eResolverState = PackageBody;
-                    break;
-                }
-                // 帧头不对直接丢弃
-                return;
-            }
-            case PackageBody :
-            {
-                dataStream >> chSize;
-                if ( (chSize-2) % 21 )
-                {
-                    // 中间数据帧如果不是21的整数倍则代表不是遥测数据, 直接丢弃
-                    return;
-                }
-                wrj_positionState.packgeLen = chSize;
-                nCount = (chSize - 2) / 21;
-                wrj_positionState.pDataFrame = 
-                (DATA_FRAME_STRU *)malloc(sizeof(DATA_FRAME_STRU)*nCount);
-                for (i = 0; i < nCount; i++)
-                {
-                    dataStream >> wrj_positionState.pDataFrame[i].dataID;
-                    dataStream >> wrj_positionState.pDataFrame[i].dataLength;
-
-                    // 如果不是遥测数据则前面已经丢弃，但是在此处还是做一下判断
-                    if ( 0x02 == wrj_positionState.pDataFrame[i].dataID &&
-                         0x13 == wrj_positionState.pDataFrame[i].dataLength)
-                    {
-                        // 飞机位置信息
-                        dataStream >> wrj_positionState.pDataFrame[i].id;
-                        dataStream >> wrj_positionState.pDataFrame[i].pos.lat;
-                        dataStream >> wrj_positionState.pDataFrame[i].pos.lon;
-                        dataStream >> wrj_positionState.pDataFrame[i].pos.alt;
-                        dataStream >> wrj_positionState.pDataFrame[i].attitude.pitch;
-                        dataStream >> wrj_positionState.pDataFrame[i].attitude.roll;
-                        dataStream >> wrj_positionState.pDataFrame[i].attitude.yaw;
-                    }
-                }
-                
-                eResolverState = PackageTail;
-                break;
-            }
-            case PackageTail :
-            {
-                /* comment by 曾日希, 2020-08-25, Mantis号:s, 原因:数据校验. */
-                dataStream >> wrj_positionState.checkBit.first;
-                dataStream >> wrj_positionState.checkBit.second;
-                eResolverState = End;
-                break;
-            }
-            default:
-            /* comment by 曾日希, 2020-08-26, Mantis号:s, 原因:错误处理. */
-                return;
-        }
-    }
-
-    // 将接收到的数据加入消息队列后释放内存
-    DataBase::instance().processRecvData(Recv_MsgType_WRJ_Entity_Pos, &wrj_positionState);
-    free(wrj_positionState.pDataFrame);
 }
 

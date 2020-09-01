@@ -60,15 +60,6 @@ public:
         Broadcast,
         Multicast
     }COMM_MODE_ENUM;
-    
-    // 协议解析状态机
-    typedef enum _RESOLVER_STATE
-    {
-        PackageHead,
-        PackageBody,
-        PackageTail,
-        End
-    }RESOLVER_STATE_ENUM;
 
     UdpHelper();
     ~UdpHelper();
@@ -81,9 +72,11 @@ private:
     int send_ZDJ_InitPosition();
 protected:
     virtual void run() Q_DECL_OVERRIDE;
+    void sendMsg();
+    void sendMsg2ZDJ();
     void parsePackage(QByteArray byteArray);
+    int parseTail(u_char *p);
     int parseCommObject(PACKAGE_HEAD_STRU *pHead);
-    void parseAHeadXSpace(QByteArray byteArray);
 private slots:
     void onReadyRead();
 private:
