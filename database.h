@@ -25,13 +25,13 @@ class DataBase
     SINGLETON(DataBase)
 public:
     // 实体毁伤状态枚举值
-    typedef enum ENTITY_DAMAGE_STATE
+    typedef enum
     {
-        DamageNone,
-        DamageSlight,
-        DamageModerate,
-        DamageDestroyed,
-    }ENTITY_DAMAGE_STATE_ENUM;
+        DAMAGE_NONE,
+        DAMAGE_SLIGHT,
+        DAMAGE_MODERATE,
+        DAMAGE_DESTROYED,
+    }EntityDamageState;
 
     bool recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity);
     void releaseEntity(int key);
@@ -40,7 +40,7 @@ public:
     void processRecvData(int nDataType, void *pData);
     void processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance);
     void processMsg(LHZS::SDI_TRACK_REPORT *pInstance);
-    MY_MSG_STRU getMyMsg();
+    my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
     
 private:
@@ -50,7 +50,7 @@ private:
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
     // 用于存接收到的消息类型
-    QList<MY_MSG_STRU> _qListMyMsgs;
+    QList<my_msg_t> _qListMyMsgs;
     QMutex _entityMutex;
     QMutex _msgMutex;
 };
@@ -62,7 +62,7 @@ extern float htonf(float hostfloat);
 inline double radian(double d);
 extern double getDistance(double lat1, double lng1, double lat2, double lng2);
 
-void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out);
-void Recv_ZDJ_RealTimeLocationTarget(UINT32 type, QDataStream &out);
+void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out);
+void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out);
 
 #endif // DATABASE_H

@@ -55,11 +55,11 @@ void DdsHelper::run()
  * 负 责 人  : 曾日希
  * 创建日期  : 2020年8月17日
  * 函数功能  : 根据消息类型处理消息
- * 输入参数  : MY_MSG_STRU stMyMsg  消息结构
+ * 输入参数  : my_msg_t stMyMsg  消息结构
  * 输出参数  : 无
  * 返 回 值  : void
 *****************************************************************************/
-void DdsHelper::processMsg(MY_MSG_STRU stMyMsg)
+void DdsHelper::processMsg(my_msg_t stMyMsg)
 {
 	switch (stMyMsg.eType)
 	{

@@ -26,7 +26,7 @@ public:
 
 protected:
     virtual void run() Q_DECL_OVERRIDE;
-    void processMsg(MY_MSG_STRU stMyMsg);
+    void processMsg(my_msg_t stMyMsg);
 
 private:
     DdsHelper();

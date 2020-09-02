@@ -19,33 +19,33 @@
 
 
 // 包体类型
-#define ZDJ_PACK_HEAD                                   (UINT32) 0xEEEEFFFF
-#define XTTC_PACK_HEAD                                  (UINT32) 0xAAAAFFFF
-#define ZDJ_PACK_TAIL                                   (UINT32) 0x0A0D0A0D
+#define ZDJ_PACK_HEAD                                   (uint32_t) 0xEEEEFFFF
+#define XTTC_PACK_HEAD                                  (uint32_t) 0xAAAAFFFF
+#define ZDJ_PACK_TAIL                                   (uint32_t) 0x0A0D0A0D
 
 
 // 战斗机消息类型
-#define ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF            (UINT32) 0x00000001
-#define ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET          (UINT32) 0x00000002
+#define ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF            (uint32_t) 0x00000001
+#define ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET          (uint32_t) 0x00000002
 
 
-typedef void (*fcDataTypeProcess_t)(UINT32, QDataStream &);
+typedef void (*fcDataTypeProcess_t)(uint32_t, QDataStream &);
 
 
-typedef struct _PACK_TYPE
+typedef struct
 {
-    UINT32 type;     
-    COMMAND_OBJECT_ENUM commobj;
-}PACK_TYPE_STRU;
+    uint32_t type;     
+    CommandObject commobj;
+}pack_type_t;
 
 
-typedef struct _MSG_PROCESS
+typedef struct
 {
-    COMMAND_OBJECT_ENUM commobj;            // 连接对象(不同单位)
-    UINT32 msgType;                         // 不同连接对象接收消息类型
-    MSG_TYPE_ALL_ENUM allType;              // 用于消息处理的消息类型标识
+    CommandObject commobj;                  // 连接对象(不同单位)
+    uint32_t msgType;                       // 不同连接对象接收消息类型
+    MsgTypeAll allType;                     // 用于消息处理的消息类型标识
     fcDataTypeProcess_t processData;        // 消息处理函数
-}MSG_PROCESS_STRU;
+}msg_process_t;
 
 
 class UdpHelper : public QThread
@@ -54,17 +54,17 @@ class UdpHelper : public QThread
 
 public:
     // UDP通讯模式(单播、广播、组播)
-    typedef enum COMM_MODE
+    typedef enum
     {
-        Unicast,
-        Broadcast,
-        Multicast
-    }COMM_MODE_ENUM;
+        UNICAST,
+        BROADCAST,
+        MULTICAST
+    }CommMode;
 
     UdpHelper();
     ~UdpHelper();
     void stop();
-    void Init(QString addr, quint16 port, int mode = Unicast);
+    void Init(QString addr, quint16 port, int mode = UNICAST);
 private:
     void broadcast();
     void joinMulticastGroup();
@@ -76,7 +76,7 @@ protected:
     void sendMsg2ZDJ();
     void parsePackage(QByteArray byteArray);
     int parseTail(u_char *p);
-    int parseCommObject(PACKAGE_HEAD_STRU *pHead);
+    int parseCommObject(package_head_t *pHead);
 private slots:
     void onReadyRead();
 private:
@@ -86,8 +86,7 @@ private:
     bool _bInit;
     QHostAddress _hostAddr;
     quint16 _nPort;
-    SOCK_SEND_MSGTYPE_ENUM _eMsgType;
-    COMMAND_OBJECT_ENUM _eCommObject;
+    CommandObject _eCommObject;
 };
 
 #endif // UDPHELPER_H

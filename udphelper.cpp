@@ -5,26 +5,26 @@
 #include <QDateTime>
 
 
-const static PACK_TYPE_STRU s_packType[] = 
+const static pack_type_t s_packType[] = 
 {
-    {ZDJ_PACK_HEAD, ZDJ_Object},
-    {XTTC_PACK_HEAD, XTTC_Object}
+    {ZDJ_PACK_HEAD, ZDJ_OBJECT},
+    {XTTC_PACK_HEAD, XTTC_OBJECT}
 };
 
 
 // 初始化连接对象
-const static MSG_PROCESS_STRU s_MsgProcess[] =
+const static msg_process_t s_MsgProcess[] =
 {
     {
-        ZDJ_Object, 
+        ZDJ_OBJECT, 
         ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF, 
-        Recv_MsgType_ZDJ_Entity_Pos, 
+        RECV_MSGTYPE_ZDJ_ENTITY_POS, 
         Recv_ZDJ_RealTimeLocation
     },
     {
-        ZDJ_Object, 
+        ZDJ_OBJECT, 
         ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET, 
-        Recv_MsgType_ZDJ_TrackReport, 
+        RECV_MSGTYPE_ZDJ_TRACK_REPORT, 
         Recv_ZDJ_RealTimeLocationTarget
     }
 };
@@ -34,12 +34,11 @@ bool g_zdj_init = true;
 
 
 UdpHelper::UdpHelper(): QThread()
-    , _eCommObject(None_Object)
+    , _eCommObject(None_OBJECT)
     , _bStop(true)
     , _bInit(false)
     , _nPort(9999)
     , _pUdpSocket(Q_NULLPTR)
-    , _eMsgType(None_MsgType)
 {  
     _hostAddr.setAddress("127.0.0.1"); 
 }
@@ -89,16 +88,16 @@ void UdpHelper::Init(QString addr, quint16 port, int mode)
     // 通讯模式选择
     switch ( mode )
     {
-        case Unicast :
+        case UNICAST :
         {
             break;
         }
-        case Broadcast :
+        case BROADCAST :
         {
             broadcast();
             break;
         }
-        case Multicast :
+        case MULTICAST :
         {
             joinMulticastGroup();
             break;
@@ -176,12 +175,12 @@ void UdpHelper::sendMsg()
 {
     switch ( _eCommObject )
     {
-        case WRJ_Object :
+        case WRJ_OBJECT :
         {
             
             break;
         }
-        case ZDJ_Object :
+        case ZDJ_OBJECT :
         {
             sendMsg2ZDJ();
             break;
@@ -236,8 +235,8 @@ int UdpHelper::sendTargetPositionState()
     count = ARRAY_SIZE(g_ZDJ_TargetPlatID);
 
     // 计算包长度
-    size = sizeof(PACKAGE_HEAD_STRU) + sizeof(UINT8) +
-    sizeof(TARGET_POSITION_STATE_STRU) * count + sizeof(UINT32);
+    size = sizeof(package_head_t) + sizeof(uint8_t) +
+    sizeof(target_position_state_t) * count + sizeof(uint32_t);
     
     in << ZDJ_PACK_HEAD
        << 0xAA
@@ -258,7 +257,7 @@ int UdpHelper::sendTargetPositionState()
             continue;
         }
         
-		in << (UINT32) pEntityReport->platId
+		in << (uint32_t) pEntityReport->platId
 		   << pEntityReport->geodeticLocationLat
 		   << pEntityReport->geodeticLocationLon
 		   << (double) 0.01; // 噪声强度
@@ -294,8 +293,8 @@ int UdpHelper::send_ZDJ_InitPosition()
 
     count = ARRAY_SIZE(g_ZDJ_nPlatID);
 
-    size = sizeof(PACKAGE_HEAD_STRU) + 4 + 1 + 
-           (count*sizeof(ZDJ_POSITION_STATE_STRU)) + 4;
+    size = sizeof(package_head_t) + 4 + 1 + 
+           (count*sizeof(zdj_position_state_t)) + 4;
 
     in << ZDJ_PACK_HEAD
        << 0xF1
@@ -313,7 +312,7 @@ int UdpHelper::send_ZDJ_InitPosition()
             return -1;
         }
         
-        in << (UINT32) pEntityReport->platId
+        in << (uint32_t) pEntityReport->platId
 		   << pEntityReport->geodeticLocationLon
 		   << pEntityReport->geodeticLocationLat
            << pEntityReport->topographicVelocityX
@@ -342,14 +341,14 @@ int UdpHelper::send_ZDJ_InitPosition()
 void UdpHelper::parsePackage(QByteArray ba)
 {
     int i, n, tailSize, packSize, result;
-    UINT32 type;
+    uint32_t type;
     
-    PACKAGE_HEAD_STRU packageHead;
+    package_head_t packageHead;
     MEMZERO(&packageHead, sizeof(packageHead));
 
     // 包尾验证
     packSize = ba.size();
-    tailSize = sizeof(UINT32);
+    tailSize = sizeof(uint32_t);
     
     QByteArray byteTail = ba.right(tailSize);
 
@@ -414,16 +413,16 @@ void UdpHelper::parsePackage(QByteArray ba)
 *****************************************************************************/
 int UdpHelper::parseTail(u_char *p)
 {
-    UINT32 tail;
+    uint32_t tail;
 
     memcpy(&tail, p, sizeof(tail));
 
-    if ( tail == (UINT32) 0x0A0D0A0D )
+    if ( tail == (uint32_t) 0x0A0D0A0D )
     {
         return 0;
     }
 
-    if ( htonl(tail) == (UINT32) 0x0A0D0A0D )
+    if ( htonl(tail) == (uint32_t) 0x0A0D0A0D )
     {
         return 1;
     }
@@ -437,11 +436,11 @@ int UdpHelper::parseTail(u_char *p)
  * 负 责 人  : 曾日希
  * 创建日期  : 2020年9月1日
  * 函数功能  : 处理包头信息
- * 输入参数  : PACKAGE_HEAD_STRU *pHead  包头
+ * 输入参数  : package_head_t *pHead  包头
  * 输出参数  : 无
  * 返 回 值  : int
 *****************************************************************************/
-int UdpHelper::parseHead(QDataStream &out, PACKAGE_HEAD_STRU *pHead)
+int UdpHelper::parseHead(QDataStream &out, package_head_t *pHead)
 {
     int i, n;
 

@@ -19,7 +19,7 @@ bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *>::iterator dbIterator;
 
     // 判断当实体死掉时，将其从库中删除
-    if (pEntity->damageState == DamageDestroyed)
+    if (pEntity->damageState == DAMAGE_DESTROYED)
     {
         _entityMutex.lock();
         dbIterator = _dbEntity.find(pEntity->platId);
@@ -123,9 +123,9 @@ void DataBase::processRecvData(int nDataType, void *pData)
     }
     switch (nDataType)
     {
-        case Recv_MsgType_WRJ_Entity_Pos:
+        case RECV_MSGTYPE_WRJ_ENTITY_POS:
         {
-            WRJ_POSITION_STATE_STRU *pInstance = (WRJ_POSITION_STATE_STRU *)pData;
+            wrj_position_state_t *pInstance = (wrj_position_state_t *)pData;
             int nCount = (pInstance->packgeLen-2) / 21;
             for (int i = 0; i < nCount; i++)
             {
@@ -146,10 +146,10 @@ void DataBase::processRecvData(int nDataType, void *pData)
             }
             break;
         }
-        case Recv_MsgType_ZDJ_Entity_Pos :
+        case RECV_MSGTYPE_ZDJ_ENTITY_POS :
         {
-            ZDJ_POSITION_STATE_LIST_STRU *pInstance =
-            (ZDJ_POSITION_STATE_LIST_STRU *)pData;
+            ZDJPositionStateList *pInstance =
+            (ZDJPositionStateList *)pData;
             
             // 将战斗机信息更新到导调
             for (int i = 0; i < pInstance->count; i++)
@@ -169,13 +169,13 @@ void DataBase::processRecvData(int nDataType, void *pData)
             }
             break;
         }
-        case Recv_MsgType_ZDJ_TrackReport :
+        case RECV_MSGTYPE_ZDJ_TRACK_REPORT :
         {
             /* comment by 曾日希, 2020-08-30, Mantis号:s, 原因:航迹发送待续. */
             break;
         }
         // 从DDS接收雷达模拟器的目标航迹
-        case DDS_MsgType_Radar_TrackReport :
+        case DDS_MSGTYPE_RADAR_TRACK_REPORT :
         {
             LHZS::SDI_TRACK_REPORT *pTrackReport =
             LHZS::SDI_TRACK_REPORTTypeSupport::create_data();
@@ -197,7 +197,7 @@ void DataBase::processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
     {
         return;
     }
-    MY_MSG_STRU stMsg;
+    my_msg_t stMsg;
     stMsg.eType = NET_MsgType_PathChangeReq;
     stMsg.pBuf = pInstance;
     _msgMutex.lock();
@@ -211,7 +211,7 @@ void DataBase::processMsg(LHZS::SDI_TRACK_REPORT *pInstance)
     {
         return;
     }
-    MY_MSG_STRU stMsg;
+    my_msg_t stMsg;
     stMsg.eType = NET_MsgType_TrackReport;
     stMsg.pBuf = pInstance;
     _msgMutex.lock();
@@ -219,9 +219,9 @@ void DataBase::processMsg(LHZS::SDI_TRACK_REPORT *pInstance)
     _msgMutex.unlock();
 }
 
-MY_MSG_STRU DataBase::getMyMsg()
+my_msg_t DataBase::getMyMsg()
 {
-    MY_MSG_STRU stMsg;
+    my_msg_t stMsg;
     stMsg.pBuf = Q_NULLPTR;
 
     _msgMutex.lock();
@@ -262,9 +262,9 @@ float htonf(float hostfloat)
     typedef union _BYTEORDER
     {
         float fTemp;
-        UINT8 szTemp[4];
+        uint8_t szTemp[4];
     }BYTEORDER;
-    UINT8 chTemp;
+    uint8_t chTemp;
     BYTEORDER uniByteOrder;
     uniByteOrder.fTemp = hostfloat;
     
@@ -313,11 +313,11 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
     return dst;// 单位：公里
 }
 
-void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out)
+void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out)
 {
     u_char count;
-    ZDJ_POSITION_STATE_LIST_STRU instance;
-    ZDJ_POSITION_STATE_STRU *p;
+    ZDJPositionStateList instance;
+    zdj_position_state_t *p;
 
     out >> instance.timestamp;
     out >> count;
@@ -328,7 +328,7 @@ void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out)
     if ( count )
     {
         instance.pPositionState =
-        (ZDJ_POSITION_STATE_STRU *)malloc(sizeof(ZDJ_POSITION_STATE_STRU)*count);
+        (zdj_position_state_t *)malloc(sizeof(zdj_position_state_t)*count);
     }
 
     p = instance.pPositionState;
@@ -353,11 +353,11 @@ void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out)
     }
 }
 
-void Recv_ZDJ_RealTimeLocationTarget(UINT32 type, QDataStream &out)
+void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out)
 {
     u_char count;
-    ZDJ_TARGET_TRACK_LIST_STRU instance;
-    ZDJ_TARGET_POS_STRU *p;
+    zdj_target_track_t instance;
+    zdj_target_pos_t *p;
 
     out >> instance.timestamp;
     out >> count;
@@ -368,7 +368,7 @@ void Recv_ZDJ_RealTimeLocationTarget(UINT32 type, QDataStream &out)
     if ( count )
     {
         instance.pTrackReport = 
-        (ZDJ_TARGET_POS_STRU *)malloc(sizeof(ZDJ_TARGET_POS_STRU)*count);
+        (zdj_target_pos_t *)malloc(sizeof(zdj_target_pos_t)*count);
     }
     
     p = instance.pTrackReport;
