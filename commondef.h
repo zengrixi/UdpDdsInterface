@@ -131,14 +131,6 @@ enum TESTTYPE
     sendFighterTarget
 };
 
-// Socket发送消息类型
-typedef enum _SOCK_SEND_MSGTYPE
-{
-    None_MsgType,
-    Send_MsgType_ZDJ_InitPosition,              // 战斗机初始位置信息
-    Send_MsgType_Target_Position,               // 战斗机目标实时位置
-}SOCK_SEND_MSGTYPE_ENUM;
-
 /*----------------------------------------------*
  * 全局结构体定义                                      *
  *----------------------------------------------*/

@@ -80,10 +80,8 @@ void DataBase::releaseEntity(int key)
     }
     
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **pFree = (&_dbEntity[key]);
-    if ( pFree && *pFree )
-    {
-        LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORTTypeSupport::delete_data(*pFree);
-    }
+    
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORTTypeSupport::delete_data(*pFree);
 }
 
 /*****************************************************************************
@@ -317,88 +315,77 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
 
 void Recv_ZDJ_RealTimeLocation(UINT32 type, QDataStream &out)
 {
-    int i, size;
     u_char count;
-    char *p;
     ZDJ_POSITION_STATE_LIST_STRU instance;
+    ZDJ_POSITION_STATE_STRU *p;
 
     out >> instance.timestamp;
     out >> count;
+    
     instance.count = count;
-
     instance.pPositionState = Q_NULLPTR;
-    if ( count > 0 )
+    
+    if ( count )
     {
         instance.pPositionState =
         (ZDJ_POSITION_STATE_STRU *)malloc(sizeof(ZDJ_POSITION_STATE_STRU)*count);
     }
 
-    size = 8;
-    p = (char *) malloc(size);
-    for (i = 0; i < count; i++)
+    p = instance.pPositionState;
+
+    while ( count-- )
     {
-        out.readRawData(p, 4);
-        memcpy(&(instance.pPositionState[i].id), p, 4);
-        out.readRawData(p, size);
-        memcpy(&(instance.pPositionState[i].pos.lon_f), p, size);
-        out.readRawData(p, size);
-        memcpy(&(instance.pPositionState[i].pos.lat_f), p, size);
-        out.readRawData(p, size);
-        memcpy(&(instance.pPositionState[i].velocity.vel_x_f), p, size);
-        out.readRawData(p, size);
-        memcpy(&(instance.pPositionState[i].velocity.vel_y_f), p, size);
-        out.readRawData(p, size);
-        memcpy(&(instance.pPositionState[i].course_f), p, size);
+        out.readRawData((char *) &(p->id), 4);
+        out.readRawData((char *) &(p->pos.lon_f), 8);
+        out.readRawData((char *) &(p->pos.lat_f), 8);
+        out.readRawData((char *) &(p->velocity.vel_x_f), 8);
+        out.readRawData((char *) &(p->velocity.vel_y_f), 8);
+        out.readRawData((char *) &(p->course_f), 8);
+        p++;
     }
 
     DataBase::instance().processRecvData(type, &instance);
     
     // 在处理消息后直接释放内存
-    if ( Q_NULLPTR != instance.pPositionState )
+    if ( instance.pPositionState )
     {
         free(instance.pPositionState);
     }
-    
-    free(p);
 }
 
 void Recv_ZDJ_RealTimeLocationTarget(UINT32 type, QDataStream &out)
 {
-    int i, size;
     u_char count;
-    char *p;
     ZDJ_TARGET_TRACK_LIST_STRU instance;
+    ZDJ_TARGET_POS_STRU *p;
 
     out >> instance.timestamp;
     out >> count;
-    instance.count = count;
 
+    instance.count = count;
     instance.pTrackReport = Q_NULLPTR;
-    if ( count > 0 )
+    
+    if ( count )
     {
         instance.pTrackReport = 
         (ZDJ_TARGET_POS_STRU *)malloc(sizeof(ZDJ_TARGET_POS_STRU)*count);
     }
+    
+    p = instance.pTrackReport;
 
-    size = 8;
-    p = (char *) malloc(size);
-    for (i = 0; i < count; i++)
+    while ( count-- )
     {
-        out.readRawData(p, 4);
-        memcpy(&(instance.pTrackReport[i].id), p, 4);
-        out.readRawData(p, size);
-        memcpy(&(instance.pTrackReport[i].pos.lon_f), p, size);
-        out.readRawData(p, size);
-        memcpy(&(instance.pTrackReport[i].pos.lat_f), p, size);
-        out.readRawData(p, size);
-        memcpy(&(instance.pTrackReport[i].err), p, size);
+        out.readRawData((char *) &(p->id), 4);
+        out.readRawData((char *) &(p->pos.lon_f), 8);
+        out.readRawData((char *) &(p->pos.lat_f), 8);
+        out.readRawData((char *) &(p->err), 8);
+        p++;
     }
 
     DataBase::instance().processRecvData(type, &instance);
     
-    if ( Q_NULLPTR != instance.pTrackReport )
+    if ( instance.pTrackReport )
     {
         free(instance.pTrackReport);
     }
-    free(p);
 }

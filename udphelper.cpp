@@ -107,10 +107,6 @@ void UdpHelper::Init(QString addr, quint16 port, int mode)
             break;
     }
 
-    if ( "192.168.1.100" == _hostAddr.toString() && 8085 == _nPort )
-    {
-        _eMsgType = Send_MsgType_ZDJ_InitPosition; // 先给战斗机发送初始位置信息
-    }
     // 接收数据绑定
     connect(_pUdpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
 }
@@ -197,6 +193,8 @@ void UdpHelper::sendMsg()
 
 void UdpHelper::sendMsg2ZDJ()
 {
+    int result;
+    
     if ( g_zdj_init )
     {
         if ( send_ZDJ_InitPosition() == 0 )
@@ -205,7 +203,11 @@ void UdpHelper::sendMsg2ZDJ()
         }
     }
 
-    sendTargetPositionState();
+    result = sendTargetPositionState();
+    if ( -1 == result )
+    {
+        qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"没有探测到目标信息.";
+    }
 }
 
 
@@ -381,6 +383,8 @@ void UdpHelper::parsePackage(QByteArray ba)
         qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包大小验证错误.";
         return;
     }
+
+    type = packageHead.msgType;
 
     while ( !out.atEnd() )
     {
