@@ -252,7 +252,7 @@ int UdpHelper::sendTargetPositionState()
         
         pEntityReport = DataBase::instance().getEntityReport(id);
 
-        if ( Q_NULLPTR == pEntityReport )
+        if ( !pEntityReport )
         {
             count--;
             continue;
@@ -264,7 +264,7 @@ int UdpHelper::sendTargetPositionState()
 		   << (double) 0.01; // 噪声强度
     }
 
-    if ( 0 == count )
+    if ( !count )
     {
         return -1;
     }
@@ -308,7 +308,7 @@ int UdpHelper::send_ZDJ_InitPosition()
 
         pEntityReport = DataBase::instance().getEntityReport(id);
 
-        if ( Q_NULLPTR == pEntityReport )
+        if ( !pEntityReport )
         {
             return -1;
         }

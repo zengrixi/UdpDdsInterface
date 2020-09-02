@@ -41,7 +41,7 @@ void MdsRecvMsg::run()
     pEntityRecvCom = 
     new PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> 
     (uiDomainID, sTopicName.toStdString(), true);
-    if (Q_NULLPTR == pEntityRecvCom)
+    if (!pEntityRecvCom)
     {
         return;
     }
@@ -49,7 +49,7 @@ void MdsRecvMsg::run()
     pTrackRecvCom = 
     new PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)>
     (uiDomainID, "LHZS::SDI_TRACK_REPORT");
-    if ( Q_NULLPTR == pTrackRecvCom )
+    if ( !pTrackRecvCom )
     {
         return;
     }
@@ -82,7 +82,7 @@ void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_
     for (int i = 0; i < report.entityList.length(); i++)
     {
         LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT e = report.entityList[i];
-        if (0 == e.platId)
+        if (!e.platId)
         {
             continue;
         }

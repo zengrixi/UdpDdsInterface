@@ -67,7 +67,7 @@ void DdsHelper::processMsg(MY_MSG_STRU stMyMsg)
 		{
 			LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq =
 			(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *)(stMyMsg.pBuf);
-			if (Q_NULLPTR != pPathChangeReq)
+			if ( pPathChangeReq )
 			{
                 if ( !MdsSendMsg::instance().onSendCommand(pPathChangeReq) )
                 {
@@ -81,7 +81,7 @@ void DdsHelper::processMsg(MY_MSG_STRU stMyMsg)
         {
             LHZS::SDI_TRACK_REPORT *pTrackReport =
             (LHZS::SDI_TRACK_REPORT *)(stMyMsg.pBuf);
-            if ( Q_NULLPTR != pTrackReport )
+            if ( pTrackReport )
             {
                 if ( !MdsSendMsg::instance().onSendMessageData(pTrackReport) )
                 {

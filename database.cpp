@@ -117,7 +117,7 @@ void DataBase::makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst,
 *****************************************************************************/
 void DataBase::processRecvData(int nDataType, void *pData)
 {
-    if ((Q_NULLPTR == pData) || (0 > nDataType))
+    if ( !pData || (0 > nDataType) )
     {
         return;
     }
@@ -193,7 +193,7 @@ void DataBase::processRecvData(int nDataType, void *pData)
 
 void DataBase::processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
 {
-    if (Q_NULLPTR == pInstance)
+    if (!pInstance)
     {
         return;
     }
@@ -207,7 +207,7 @@ void DataBase::processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
 
 void DataBase::processMsg(LHZS::SDI_TRACK_REPORT *pInstance)
 {
-    if (Q_NULLPTR == pInstance)
+    if (!pInstance)
     {
         return;
     }

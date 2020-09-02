@@ -153,7 +153,7 @@ SendLog::SendLog()
 
 SendLog::~SendLog()
 {
-    if (Q_NULLPTR != _pSocket)
+    if (_pSocket)
     {
         _pSocket->disconnectFromHost();
     }
@@ -162,7 +162,7 @@ SendLog::~SendLog()
 
 void SendLog::newConnection()
 {
-    while (Q_NULLPTR != _pSocket && _pSocket->isOpen())
+    while (_pSocket && _pSocket->isOpen())
     {
         _pSocket = _pServer->nextPendingConnection();
     }
@@ -170,7 +170,7 @@ void SendLog::newConnection()
 
 void SendLog::send(const QString & content)
 {
-    if (Q_NULLPTR != _pSocket && _pSocket->isOpen())
+    if (_pSocket && _pSocket->isOpen())
     {
         _pSocket->write(content.toUtf8());
         _pSocket->flush();
