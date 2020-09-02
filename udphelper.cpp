@@ -233,7 +233,7 @@ int UdpHelper::sendTargetPositionState()
     in.setByteOrder(QDataStream::LittleEndian);
 #endif
 
-    count = ZDJ_TARGET_COUNT;
+    count = ARRAY_SIZE(g_ZDJ_TargetPlatID);
 
     // 计算包长度
     size = sizeof(PACKAGE_HEAD_STRU) + sizeof(UINT8) +
@@ -292,7 +292,7 @@ int UdpHelper::send_ZDJ_InitPosition()
     in.setByteOrder(QDataStream::LittleEndian);
 #endif
 
-    count = ZDJ_COUNT;
+    count = ARRAY_SIZE(g_ZDJ_nPlatID);
 
     size = sizeof(PACKAGE_HEAD_STRU) + 4 + 1 + 
            (count*sizeof(ZDJ_POSITION_STATE_STRU)) + 4;
@@ -388,7 +388,7 @@ void UdpHelper::parsePackage(QByteArray ba)
 
     while ( !out.atEnd() )
     {
-        n = sizeof(s_MsgProcess) / sizeof(s_MsgProcess[0]);
+        n = ARRAY_SIZE(s_MsgProcess);
         for (i = 0; i < n; i++)
         {
             if ( s_MsgProcess[i].commobj == _eCommObject &&
@@ -448,7 +448,7 @@ int UdpHelper::parseHead(QDataStream &out, PACKAGE_HEAD_STRU *pHead)
     out >> pHead->packHead;
 
     // 判断单位
-    n = sizeof(s_packType) / sizeof(s_packType[0]);
+    n = ARRAY_SIZE(s_packType);
     for (i = 0; i < n; i++)
     {
         if ( s_packType[i].type == pHead->packHead )

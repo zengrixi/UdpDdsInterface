@@ -18,13 +18,13 @@
 #define MEMCPY_SRC_APPED(dst, src, n)   (((u_char *) memcpy(dst, src, n)), (src += n))
 #define MEMCPY_DST_APPEN(dst, src, n)   (((u_char *) memcpy(dst, src, n)) + (n))
 #define MEMZERO(buf, n)                 (void) memset(buf, 0, n)
+// 阵列大小宏
+#define ARRAY_SIZE(x)                   (sizeof(x) / sizeof((x)[0]))
+
 
 #define PI                              3.141592653
 #define EARTH_RADIUS                    6378.137        // 地球近似半径
 
-// 战斗机相关
-#define ZDJ_COUNT                       sizeof(g_ZDJ_nPlatID) / sizeof(g_ZDJ_nPlatID[0])
-#define ZDJ_TARGET_COUNT                sizeof(g_ZDJ_TargetPlatID) / sizeof(g_ZDJ_TargetPlatID[0])
 
 /*----------------------------------------------*
  * 数据类型定义                                       *
