@@ -49,19 +49,7 @@ bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
     }
 
     // 判断平台id后对实体进行处理
-    switch (pEntity->platId)
-    {
-        case 4:
-        case 41:
-        case 61:
-        {
-        }
-
-        default:
-        {
-            break;
-        }
-    }
+    // ...
 
     // 对实体进行存储
     // 如果库中有该实体则更新，否则新增
@@ -164,8 +152,8 @@ void DataBase::processRecvData(int nDataType, void *pData)
         }
         case RECV_MSGTYPE_ZDJ_ENTITY_POS :
         {
-            ZDJPositionStateList *pInstance =
-            (ZDJPositionStateList *)pData;
+            zdj_position_state_list_t *pInstance =
+            (zdj_position_state_list_t *)pData;
             
             // 将战斗机信息更新到导调
             for (int i = 0; i < pInstance->count; i++)
@@ -305,7 +293,7 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
 void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out)
 {
     u_char count;
-    ZDJPositionStateList instance;
+    zdj_position_state_list_t instance;
     zdj_position_state_t *p;
 
     out >> instance.timestamp;

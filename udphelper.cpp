@@ -236,7 +236,7 @@ int UdpHelper::sendTargetPositionState()
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
-    sizeof(target_position_state_t) * count + sizeof(uint32_t);
+    sizeof(target_position_state_list_t) * count + sizeof(uint32_t);
     
     in << ZDJ_PACK_HEAD
        << 0xAA

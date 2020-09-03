@@ -70,6 +70,7 @@ typedef enum
     None_OBJECT,
 }CommandObject;
 
+
 typedef enum
 {
     RECV_MSGTYPE_WRJ_ENTITY_POS,                        // 无人机自身位置信息
@@ -118,6 +119,39 @@ typedef struct
     int16_t roll;          
 }wrj_attitude_t;
 
+// 无人机数据帧头
+typedef struct
+{
+    uint8_t first;
+    uint8_t second;
+}frame_head_t;
+
+// 无人机位置信息
+typedef struct
+{
+    uint8_t dataID;
+    uint8_t dataLength;
+    uint8_t id;
+     wrj_pos_t pos;
+    wrj_attitude_t attitude;
+}data_frame_t;
+
+// 包尾数据校验
+typedef struct
+{
+    uint8_t first;
+    uint8_t second;
+}crc_check_t;
+    
+// 飞控平台接收的无人机位置信息
+typedef struct
+{
+    frame_head_t frameHead;
+    uint8_t packgeLen;
+    data_frame_t *pDataFrame;
+    crc_check_t checkBit;
+}wrj_position_state_t;
+
 // 战斗机位置
 typedef struct
 {
@@ -157,7 +191,7 @@ typedef struct
     uint8_t count;
     zdj_position_state_t *pPositionState;
     uint32_t packTail;
-}ZDJPositionStateList;
+}zdj_position_state_list_t;
 
 // 航迹点
 typedef struct
@@ -201,7 +235,7 @@ typedef struct
     uint8_t count;
     target_position_state_t *pPositionState;
     uint32_t packTail;
-}target_position_state_t;
+}target_position_state_list_t;
 
 // 数据接收结构体
 typedef struct
