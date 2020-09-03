@@ -38,8 +38,6 @@ public:
     void makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst, 
         const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
     void processRecvData(int nDataType, void *pData);
-    void processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance);
-    void processMsg(LHZS::SDI_TRACK_REPORT *pInstance);
     my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
     

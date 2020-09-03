@@ -63,7 +63,7 @@ void DdsHelper::processMsg(my_msg_t stMyMsg)
 {
 	switch (stMyMsg.eType)
 	{
-		case NET_MsgType_PathChangeReq:
+		case NET_MSGTYPE_PATH_CHANGE_REQ:
 		{
 			LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq =
 			(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *)(stMyMsg.pBuf);
@@ -77,7 +77,7 @@ void DdsHelper::processMsg(my_msg_t stMyMsg)
 			}
 			break;
 		}
-        case NET_MsgType_TrackReport :
+        case NET_MSGTYPE_TRACK_REPORT :
         {
             LHZS::SDI_TRACK_REPORT *pTrackReport =
             (LHZS::SDI_TRACK_REPORT *)(stMyMsg.pBuf);

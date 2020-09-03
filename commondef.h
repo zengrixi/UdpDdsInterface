@@ -13,6 +13,21 @@
 #include <QList>
 
 /*----------------------------------------------*
+ * 数据类型定义                                       *
+ *----------------------------------------------*/
+typedef signed char 		int8_t;		 
+typedef unsigned char       uint8_t;   
+typedef signed short        int16_t;
+typedef unsigned short      uint16_t;
+typedef signed int          int32_t;
+typedef unsigned int        uint32_t;
+typedef signed long long    int64_t;
+typedef unsigned long long  uint64_t;
+
+typedef unsigned char       u_char;                   // 类型兼容
+
+
+/*----------------------------------------------*
  * 宏定义                                          *
  *----------------------------------------------*/
 #define MEMCPY_SRC_APPED(dst, src, n)   (((u_char *) memcpy(dst, src, n)), (src += n))
@@ -26,17 +41,6 @@
 #define EARTH_RADIUS                    6378.137        // 地球近似半径
 
 
-/*----------------------------------------------*
- * 数据类型定义                                       *
- *----------------------------------------------*/
-typedef signed char 		int8_t;		 
-typedef unsigned char       uint8_t;   
-typedef signed short        int16_t;
-typedef unsigned short      uint16_t;
-typedef signed int          int32_t;
-typedef unsigned int        uint32_t;
-typedef signed long long    int64_t;
-typedef unsigned long long  uint64_t;
 /*----------------------------------------------*
  * 常量定义                                         *
  *----------------------------------------------*/
@@ -53,6 +57,7 @@ static const int g_ZDJ_TargetPlatID[] =
     112, 111, 113, 119, 118
 };
 
+
 /*----------------------------------------------*
  * 全局枚举定义                                       *
  *----------------------------------------------*/
@@ -65,7 +70,6 @@ typedef enum
     None_OBJECT,
 }CommandObject;
 
-
 typedef enum
 {
     RECV_MSGTYPE_WRJ_ENTITY_POS,                        // 无人机自身位置信息
@@ -77,47 +81,10 @@ typedef enum
 // 导调DDS消息类型
 typedef enum
 {
-    NET_MsgType_PathChangeReq, //指挥引导  1:7
-    NET_MsgType_TrackReport,
-    NET_MsgType_UavCreteEntity = 10000, //创建无人机
-
-    NET_MsgType_LaunchMissile, //发射导弹
-
-
-    NET_MsgType_MissileFireReq, //远程制导  4:3
-
-
-    NET_MsgType_CommandAndGuidance, //指挥引导  1:42
-
-    NET_MsgType_ScenarioReq, //指令控制
-
-    NET_MsgType_ZdMsg,
-    NET_MsgType_DeleteEntity, //删除实体
-
-    NET_MsgType_ChangeSensor, //更改传感器
-
-    NET_MsgType_CommLine_4001 = 4000,
-    NET_MsgType_CommLine_4002,
-    NET_MsgType_CommLine_4003,
-    NET_MsgType_CommLine_4004,
-    NET_MsgType_CommLine_4005,
-    NET_MsgType_CommLine_4006,
-    NET_MsgType_CommLine_4_Main,
-
-    NET_MsgType_CommLine_5001 = 5000,
-    NET_MsgType_CommLine_5002,
-    NET_MsgType_CommLine_5003,
-    NET_MsgType_CommLine_5004,
-    NET_MsgType_CommLine_5005,
-    NET_MsgType_CommLine_5006,
-    NET_MsgType_CommLine_5_Main,
-
-    NET_MsgType_CommLine_60000 = 6000,
-
-    NET_MsgType_COOPERATE_POSITION,
-
-    // 无人机平台
-    NET_MsgType_FeiKong = 9000,
+    NET_MSGTYPE_PATH_CHANGE_REQ, //指挥引导  1:7
+    NET_MSGTYPE_TRACK_REPORT,
+    NET_MSGTYPE_UAV_CRETE_ENTITY = 10000, //创建无人机
+    NET_MSGTYPE_FEIKONG = 9000,
 }NetMsg;
 
 // 测试类型
@@ -164,39 +131,6 @@ typedef struct
     double vel_x_f;// 速度x
     double vel_y_f;// 速度y      
 }zdj_velocity_t;
-
-// 无人机数据帧头
-typedef struct
-{
-    uint8_t first;
-    uint8_t second;
-}frame_head_t;
-
-// 无人机位置信息
-typedef struct
-{
-    uint8_t dataID;
-    uint8_t dataLength;
-    uint8_t id;
-     wrj_pos_t pos;
-    wrj_attitude_t attitude;
-}data_frame_t;
-
-// 包尾数据校验
-typedef struct
-{
-    uint8_t first;
-    uint8_t second;
-}crc_check_t;
-    
-// 飞控平台接收的无人机位置信息
-typedef struct
-{
-    frame_head_t frameHead;
-    uint8_t packgeLen;
-    data_frame_t *pDataFrame;
-    crc_check_t checkBit;
-}wrj_position_state_t;
 
 // 数据包头
 typedef struct

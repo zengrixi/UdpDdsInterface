@@ -2,6 +2,22 @@
 
 #include <math.h>
 
+
+#define processMsg(p, t)                                \
+    do                                                  \
+    {                                                   \
+        if ( p )                                        \
+        {                                               \
+            my_msg_t stMsg;                             \
+            stMsg.eType = t;                            \
+            stMsg.pBuf = p;                             \
+            _msgMutex.lock();                           \
+            _qListMyMsgs.push_back(stMsg);              \
+            _msgMutex.unlock();                         \
+        }                                               \
+    } while ( 0 );
+
+
 DataBase::DataBase()
 {
     
@@ -142,7 +158,7 @@ void DataBase::processRecvData(int nDataType, void *pData)
                 posDatas[0].alt_f = pInstance->pDataFrame[i].pos.alt / 100.0;
              
                 LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array(&pPathChangeReq->PosList, posDatas, nLength);
-                processMsg(pPathChangeReq);
+                processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
             }
             break;
         }
@@ -165,7 +181,7 @@ void DataBase::processRecvData(int nDataType, void *pData)
                 posDatas[0].lat_f = pInstance->pPositionState[i].pos.lat_f;
                 posDatas[0].lon_f = pInstance->pPositionState[i].pos.lon_f;
                 LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array(&pPathChangeReq->PosList, posDatas, nLength);
-                processMsg(pPathChangeReq);
+                processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
             }
             break;
         }
@@ -180,8 +196,8 @@ void DataBase::processRecvData(int nDataType, void *pData)
             LHZS::SDI_TRACK_REPORT *pTrackReport =
             LHZS::SDI_TRACK_REPORTTypeSupport::create_data();
             LHZS::SDI_TRACK_REPORTTypeSupport::copy_data(pTrackReport, (LHZS::SDI_TRACK_REPORT *)pData);
-            processMsg(pTrackReport);
-            /* comment by 曾日希, 2020-08-24, Mantis号:s, 原因:打印测试. */
+            processMsg(pTrackReport, NET_MSGTYPE_PATH_CHANGE_REQ);
+            
             TestInfo(pTrackReport);
             break;
         }
@@ -191,33 +207,6 @@ void DataBase::processRecvData(int nDataType, void *pData)
     }
 }
 
-void DataBase::processMsg(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
-{
-    if (!pInstance)
-    {
-        return;
-    }
-    my_msg_t stMsg;
-    stMsg.eType = NET_MsgType_PathChangeReq;
-    stMsg.pBuf = pInstance;
-    _msgMutex.lock();
-    _qListMyMsgs.push_back(stMsg);
-    _msgMutex.unlock();
-}
-
-void DataBase::processMsg(LHZS::SDI_TRACK_REPORT *pInstance)
-{
-    if (!pInstance)
-    {
-        return;
-    }
-    my_msg_t stMsg;
-    stMsg.eType = NET_MsgType_TrackReport;
-    stMsg.pBuf = pInstance;
-    _msgMutex.lock();
-    _qListMyMsgs.push_back(stMsg);
-    _msgMutex.unlock();
-}
 
 my_msg_t DataBase::getMyMsg()
 {
