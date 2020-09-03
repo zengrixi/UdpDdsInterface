@@ -129,7 +129,8 @@ void UdpHelper::joinMulticastGroup()
     {
         netInterface = listInterface[i];
         QNetworkInterface::InterfaceFlags flags = netInterface.flags();
-        if ((flags & QNetworkInterface::IsRunning) && (flags & QNetworkInterface::CanMulticast))
+        if ( (flags & QNetworkInterface::IsRunning) &&
+             (flags & QNetworkInterface::CanMulticast) )
         {
             break;
         }
@@ -239,7 +240,7 @@ int UdpHelper::sendTargetPositionState()
     sizeof(target_position_state_list_t) * count + sizeof(uint32_t);
     
     in << ZDJ_PACK_HEAD
-       << 0xAA
+       << (uint32_t) 0xAA
        << size
        << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
        << count;
@@ -297,7 +298,7 @@ int UdpHelper::send_ZDJ_InitPosition()
            (count*sizeof(zdj_position_state_t)) + 4;
 
     in << ZDJ_PACK_HEAD
-       << 0xF1
+       << (uint32_t) 0xF1
        << size
        << count;
 

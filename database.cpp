@@ -6,15 +6,12 @@
 #define processMsg(p, t)                                \
     do                                                  \
     {                                                   \
-        if ( p )                                        \
-        {                                               \
-            my_msg_t stMsg;                             \
-            stMsg.eType = t;                            \
-            stMsg.pBuf = p;                             \
-            _msgMutex.lock();                           \
-            _qListMyMsgs.push_back(stMsg);              \
-            _msgMutex.unlock();                         \
-        }                                               \
+        my_msg_t stMsg;                                 \
+        stMsg.eType = t;                                \
+        stMsg.pBuf = p;                                 \
+        _msgMutex.lock();                               \
+        _qListMyMsgs.push_back(stMsg);                  \
+        _msgMutex.unlock();                             \
     } while ( 0 );
 
 
@@ -145,7 +142,9 @@ void DataBase::processRecvData(int nDataType, void *pData)
                 posDatas[0].lat_f = pInstance->pDataFrame[i].pos.lat / pow(10, 7);
                 posDatas[0].alt_f = pInstance->pDataFrame[i].pos.alt / 100.0;
              
-                LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array(&pPathChangeReq->PosList, posDatas, nLength);
+                LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+                (&pPathChangeReq->PosList, posDatas, nLength);
+                
                 processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
             }
             break;
@@ -168,7 +167,10 @@ void DataBase::processRecvData(int nDataType, void *pData)
                 posDatas[0].alt_f = 0;
                 posDatas[0].lat_f = pInstance->pPositionState[i].pos.lat_f;
                 posDatas[0].lon_f = pInstance->pPositionState[i].pos.lon_f;
-                LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array(&pPathChangeReq->PosList, posDatas, nLength);
+                
+                LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+                (&pPathChangeReq->PosList, posDatas, nLength);
+                
                 processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
             }
             break;
@@ -183,7 +185,10 @@ void DataBase::processRecvData(int nDataType, void *pData)
         {
             LHZS::SDI_TRACK_REPORT *pTrackReport =
             LHZS::SDI_TRACK_REPORTTypeSupport::create_data();
-            LHZS::SDI_TRACK_REPORTTypeSupport::copy_data(pTrackReport, (LHZS::SDI_TRACK_REPORT *)pData);
+            
+            LHZS::SDI_TRACK_REPORTTypeSupport::copy_data
+            (pTrackReport, (LHZS::SDI_TRACK_REPORT *)pData);
+            
             processMsg(pTrackReport, NET_MSGTYPE_PATH_CHANGE_REQ);
             
             TestInfo(pTrackReport);
