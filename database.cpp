@@ -106,6 +106,66 @@ void DataBase::makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst,
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORTTypeSupport::copy_data(*dst, src);
 }
 
+
+void DataBase::processPathChange(void *pData)
+{
+    int i, j;
+    uint32_t id, n;
+    path_change_req_t *p;
+    zdj_position_state_list_t *pInstance;
+    LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq;
+    QMap<uint32_t, path_change_req_t *>::iterator it;
+
+    pInstance = (zdj_position_state_list_t *)pData;
+
+    for (i = 0; i < pInstance->count; i++)
+    {
+        id = pInstance->pPositionState[i].id;
+        it = _dbPathReq.find(id);
+        if ( it != _dbPathReq.end() )
+        {
+            p = it.value();
+        }
+        else
+        {
+            p = (path_change_req_t *)malloc(sizeof(path_change_req_t));
+            p->count = 0;
+            _dbPathReq.insert(id, p);
+        }
+
+        n = p->count;
+        if ( n < PATH_CHANGE_REQ_COUNT )
+        {
+            p->path[n].x = pInstance->pPositionState[i].pos.x;
+            p->path[n].y = pInstance->pPositionState[i].pos.y;
+            p->count++;
+        }
+        else
+        {
+            p->count = 0;
+            
+            pPathChangeReq = LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
+            pPathChangeReq->platId = id;
+            
+            LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
+            for (j = 0; j < n; j++)
+            {
+                posDatas[j].lon_f = p->path[j].x;
+                posDatas[j].lat_f = p->path[j].y;
+                posDatas[j].alt_f = p->path[j].z;
+            }
+            
+            LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+            (&pPathChangeReq->PosList, posDatas, n);
+            
+            processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
+        }
+    }
+
+
+}
+
+
 /*****************************************************************************
  * 函 数 名  : DataBase.processRecvData
  * 负 责 人  : 曾日希
@@ -118,17 +178,21 @@ void DataBase::makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst,
 *****************************************************************************/
 void DataBase::processRecvData(int nDataType, void *pData)
 {
+    int i;
+    uint8_t n;
+    
     if ( !pData || (0 > nDataType) )
     {
         return;
     }
+    
     switch (nDataType)
     {
         case RECV_MSGTYPE_WRJ_ENTITY_POS:
         {
             wrj_position_state_t *pInstance = (wrj_position_state_t *)pData;
             int nCount = (pInstance->packgeLen-2) / 21;
-            for (int i = 0; i < nCount; i++)
+            for (i = 0; i < nCount; i++)
             {
                 LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq =
                 LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
@@ -151,28 +215,7 @@ void DataBase::processRecvData(int nDataType, void *pData)
         }
         case RECV_MSGTYPE_ZDJ_ENTITY_POS :
         {
-            zdj_position_state_list_t *pInstance =
-            (zdj_position_state_list_t *)pData;
-            
-            // 将战斗机信息更新到导调
-            for (int i = 0; i < pInstance->count; i++)
-            {
-                LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq =
-                LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
-
-                // 拷贝战斗机编队信息
-                int nLength = 1;
-                LHZS::VRFORCE_COMMAND::POS_DATA posDatas[nLength];
-                pPathChangeReq->platId = pInstance->pPositionState[i].id;
-                posDatas[0].alt_f = 0;
-                posDatas[0].lat_f = pInstance->pPositionState[i].pos.lat_f;
-                posDatas[0].lon_f = pInstance->pPositionState[i].pos.lon_f;
-                
-                LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
-                (&pPathChangeReq->PosList, posDatas, nLength);
-                
-                processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
-            }
+            processPathChange(pData);
             break;
         }
         case RECV_MSGTYPE_ZDJ_TRACK_REPORT :
@@ -189,9 +232,35 @@ void DataBase::processRecvData(int nDataType, void *pData)
             LHZS::SDI_TRACK_REPORTTypeSupport::copy_data
             (pTrackReport, (LHZS::SDI_TRACK_REPORT *)pData);
             
-            processMsg(pTrackReport, NET_MSGTYPE_PATH_CHANGE_REQ);
+            processMsg(pTrackReport, NET_MSGTYPE_TRACK_REPORT);
             
             TestInfo(pTrackReport);
+            break;
+        }
+        case RECV_MSGTYPE_COR_TRACK_REPORT :
+        {
+            xttc_target_track_t *pInstance =
+            (xttc_target_track_t *)pData;
+            xttc_target_t *p;
+
+            n = pInstance->targetCount;
+
+            while ( n-- )
+            {
+                LHZS::SDI_TRACK_REPORT *pTrackReport =
+                LHZS::SDI_TRACK_REPORTTypeSupport::create_data();
+
+                p = pInstance->pTargets;
+
+                pTrackReport->time_of_update_ul = pInstance->timestamp;
+                pTrackReport->target_attribute_data.target_type_e = p->type;
+                // ...
+
+                p++;
+
+                processMsg(pTrackReport, NET_MSGTYPE_TRACK_REPORT);
+            }
+            
             break;
         }
 
@@ -295,6 +364,7 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
     return dst;// 单位：公里
 }
 
+
 void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out)
 {
     u_char count;
@@ -317,12 +387,12 @@ void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out)
 
     while ( count-- )
     {
-        out.readRawData((char *) &(p->id), 4);
-        out.readRawData((char *) &(p->pos.lon_f), 8);
-        out.readRawData((char *) &(p->pos.lat_f), 8);
-        out.readRawData((char *) &(p->velocity.vel_x_f), 8);
-        out.readRawData((char *) &(p->velocity.vel_y_f), 8);
-        out.readRawData((char *) &(p->course_f), 8);
+        out.readRawData((char *) &(p->id), sizeof(p->id));
+        out.readRawData((char *) &(p->pos.x), sizeof(p->pos.x));
+        out.readRawData((char *) &(p->pos.y), sizeof(p->pos.y));
+        out.readRawData((char *) &(p->velocity.x), sizeof(p->velocity.x));
+        out.readRawData((char *) &(p->velocity.y), sizeof(p->velocity.y));
+        out.readRawData((char *) &(p->course_f), sizeof(p->course_f));
         p++;
     }
 
@@ -334,6 +404,7 @@ void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out)
         free(instance.pPositionState);
     }
 }
+
 
 void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out)
 {
@@ -357,10 +428,10 @@ void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out)
 
     while ( count-- )
     {
-        out.readRawData((char *) &(p->id), 4);
-        out.readRawData((char *) &(p->pos.lon_f), 8);
-        out.readRawData((char *) &(p->pos.lat_f), 8);
-        out.readRawData((char *) &(p->err), 8);
+        out.readRawData((char *) &(p->id), sizeof(p->id));
+        out.readRawData((char *) &(p->pos.x), sizeof(p->pos.x));
+        out.readRawData((char *) &(p->pos.y), sizeof(p->pos.y));
+        out.readRawData((char *) &(p->err), sizeof(p->err));
         p++;
     }
 
@@ -369,5 +440,91 @@ void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out)
     if ( instance.pTrackReport )
     {
         free(instance.pTrackReport);
+    }
+}
+
+
+/*****************************************************************************
+ * 函 数 名  : Recv_COR_TrackReport
+ * 负 责 人  : 曾日希
+ * 创建日期  : 2020年9月9日
+ * 函数功能  : 协同探测消息处理
+ * 输入参数  : uint32_t type     消息类型
+               QDataStream &out  消息流
+ * 输出参数  : 无
+ * 返 回 值  : void
+*****************************************************************************/
+void Recv_COR_TrackReport(uint32_t type, QDataStream &out)
+{
+    uint8_t count, n;
+    xttc_target_track_t instance;
+    xttc_target_t *ptargets;
+    xttc_track_point_t *ptrackPoints;
+
+    out >> instance.timestamp;
+    out >> count;
+
+    instance.targetCount = count;
+    instance.pTargets = Q_NULLPTR;
+
+    if ( count )
+    {
+        instance.pTargets =
+        (xttc_target_t *)malloc(sizeof(xttc_target_t) * count);
+    }
+
+    ptargets = instance.pTargets;
+
+    while ( count-- )
+    {
+        out.readRawData((char *) &(ptargets->type), sizeof(ptargets->type));
+        out.readRawData((char *) &(ptargets->typeComfidence), sizeof(ptargets->typeComfidence));
+        out.readRawData((char *) &(ptargets->ffAttriibute), sizeof(ptargets->ffAttriibute));
+        out.readRawData((char *) &(ptargets->rate), sizeof(ptargets->rate));
+        out.readRawData((char *) &(ptargets->velocity), sizeof(ptargets->velocity));
+        out.readRawData((char *) &(ptargets->trackID), sizeof(ptargets->trackID));
+        out.readRawData((char *) &(n), sizeof(n));
+
+        // 取出目标的航迹点信息
+        ptargets->trackPointsCount = n;
+        ptargets->pTrackPoints = Q_NULLPTR;
+
+        if ( n )
+        {
+            ptargets->pTrackPoints = 
+            (xttc_track_point_t *)malloc(sizeof(xttc_track_point_t) * n);
+        }
+
+        ptrackPoints = ptargets->pTrackPoints;
+
+        while ( n-- )
+        {
+            out.readRawData((char *) &(ptrackPoints->pos.x), sizeof(ptrackPoints->pos.x));
+            out.readRawData((char *) &(ptrackPoints->pos.y), sizeof(ptrackPoints->pos.y));
+            out.readRawData((char *) &(ptrackPoints->pos.z), sizeof(ptrackPoints->pos.z));
+            out.readRawData((char *) &(ptrackPoints->headingAngle), sizeof(ptrackPoints->headingAngle));
+            ptrackPoints++;
+        }
+
+        ptargets++;
+    }
+
+    DataBase::instance().processRecvData(type, &instance);
+
+    if ( instance.pTargets )
+    {
+        n = instance.targetCount;
+        ptargets = instance.pTargets;
+        
+        while ( n-- )
+        {
+            if ( ptargets->pTrackPoints )
+            {
+                free(ptargets->pTrackPoints);
+            }
+            ptargets++;
+        }
+        
+        free(instance.pTargets);
     }
 }

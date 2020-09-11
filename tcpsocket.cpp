@@ -292,7 +292,7 @@ QByteArray TCPSocket::makeData()
             sendData.append(tem);
             break;
 
-        case sendSARTarget: //发送航迹
+        case sendSARTarget: //发送航迹？？？？？？？向SAR目标识别方发送目标位置
             tempData = 0x3652A11F;
             memcpy(tem.data(), &tempData, 4);
             sendData.append(tem);
@@ -308,7 +308,7 @@ QByteArray TCPSocket::makeData()
                 sendData.append((char) 0);
             }
 
-            //定义航迹结构体
+            //定义航迹结构体？？？定义目标信息结构体
             for (i = 0; i < count; i++)
             {
                 targetTrack.day = datetime.date().day();

@@ -22,12 +22,17 @@
 #define ZDJ_PACK_HEAD                                   (uint32_t) 0xEEEEFFFF
 #define XTTC_PACK_HEAD                                  (uint32_t) 0xAAAAFFFF
 #define ZDJ_PACK_TAIL                                   (uint32_t) 0x0A0D0A0D
+#define ENTITY_PACK_HEAD                                (uint32_t) 0x0000FFFF
+#define ENTITY_PACK_TAIL                                (uint32_t) 0xEEEE0000
 
 
 // 战斗机消息类型
 #define ZDJ_MSG_TYPE_REAL_TIME_LOCATION_SELF            (uint32_t) 0x00000001
 #define ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET          (uint32_t) 0x00000002
 
+// 协同探测消息类型
+#define COR_MSG_TYPE_REAL_TIME_LOCATION_ENTITY          (uint32_t) 0x00000001
+#define COR_MSG_TYPE_REAL_TIME_LOCATION_TRACK           (uint32_t) 0x00000002
 
 typedef void (*fcDataTypeProcess_t)(uint32_t, QDataStream &);
 
@@ -64,18 +69,21 @@ public:
     UdpHelper();
     ~UdpHelper();
     void stop();
-    void Init(QString addr, quint16 port, int mode = UNICAST);
+    void Init(QString addr, uint16_t port, int mode = UNICAST);
 private:
     void broadcast();
     void joinMulticastGroup();
+    int sendFlightPositionState();
     int sendTargetPositionState();
-    int send_ZDJ_InitPosition();
+    int sendFlightControlState(bool is_controlled);
+    int sendEntityPositionState();
 protected:
     virtual void run() Q_DECL_OVERRIDE;
     void sendMsg();
     void sendMsg2ZDJ();
     void parsePackage(QByteArray byteArray);
     int parseTail(u_char *p);
+    int parseHead(QDataStream &out, package_head_t *pHead);
     int parseCommObject(package_head_t *pHead);
 private slots:
     void onReadyRead();

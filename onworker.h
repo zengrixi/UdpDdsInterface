@@ -28,6 +28,11 @@ public:
 private:
     UdpHelper *_pWRJ_Udp;
     UdpHelper *_pZDJ_Udp;
+    UdpHelper *_pCOR_Udp;
+
+    QString _ZDJ_IP,_WRJ_IP,_COR_IP;
+    uint16_t _ZDJ_PORT,_WRJ_PORT,_COR_PORT;
+    void readConfig();
 
 signals:
 

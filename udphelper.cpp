@@ -5,6 +5,7 @@
 #include <QDateTime>
 
 
+// 包头信息类型初始化
 const static pack_type_t s_packType[] = 
 {
     {ZDJ_PACK_HEAD, ZDJ_OBJECT},
@@ -26,6 +27,12 @@ const static msg_process_t s_MsgProcess[] =
         ZDJ_MSG_TYPE_REAL_TIME_LOCATION_TARGET, 
         RECV_MSGTYPE_ZDJ_TRACK_REPORT, 
         Recv_ZDJ_RealTimeLocationTarget
+    },
+    {
+        XTTC_OBJECT,
+        COR_MSG_TYPE_REAL_TIME_LOCATION_TRACK,
+        RECV_MSGTYPE_COR_TRACK_REPORT,
+        Recv_COR_TrackReport
     }
 };
 
@@ -40,7 +47,7 @@ UdpHelper::UdpHelper(): QThread()
     , _nPort(9999)
     , _pUdpSocket(Q_NULLPTR)
 {  
-    _hostAddr.setAddress("127.0.0.1"); 
+    _hostAddr.setAddress("127.0.0.1");
 }
 
 
@@ -71,7 +78,7 @@ void UdpHelper::stop()
  * 输出参数  : 无
  * 返 回 值  : void
 *****************************************************************************/
-void UdpHelper::Init(QString addr, quint16 port, int mode)
+void UdpHelper::Init(QString addr, uint16_t port, int mode)
 {
     _hostAddr.setAddress(addr);
     _nPort = port;
@@ -113,7 +120,19 @@ void UdpHelper::Init(QString addr, quint16 port, int mode)
 
 void UdpHelper::broadcast()
 {
-    
+//    foreach (QNetworkInterface interface, QNetworkInterface::allInterfaces())
+//    {
+//        if ( interface.flags() & QNetworkInterface::CanBroadcast )
+//        {
+//            foreach (QNetworkAddressEntry entry, interface.addressEntries())
+//            {
+//                if ( !entry.broadcast().isNull() )
+//                {
+//                    writeDatagram();
+//                }
+//            }
+//        }
+//    }
 }
 
 
@@ -186,7 +205,9 @@ void UdpHelper::sendMsg()
             sendMsg2ZDJ();
             break;
         }
-        default:
+        case XTTC_OBJECT :
+            sendEntityPositionState();
+            break;
     }
 }
 
@@ -197,7 +218,7 @@ void UdpHelper::sendMsg2ZDJ()
     
     if ( g_zdj_init )
     {
-        if ( send_ZDJ_InitPosition() == 0 )
+        if ( sendFlightPositionState() == 0 )
         {
             g_zdj_init = false;
         }
@@ -209,7 +230,6 @@ void UdpHelper::sendMsg2ZDJ()
         qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"没有探测到目标信息.";
     }
 }
-
 
 /*****************************************************************************
  * 函 数 名  : UdpHelper.sendTargetPositionState
@@ -237,19 +257,21 @@ int UdpHelper::sendTargetPositionState()
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
-    sizeof(target_position_state_list_t) * count + sizeof(uint32_t);
-    
+    sizeof(target_position_state_list_t) * count + sizeof(uint32_t);///////???????target_position_state_t
+
+//    size=sizeof(package_head_t) + sizeof(uint8_t) +
+//            28 * count + sizeof(uint32_t);
     in << ZDJ_PACK_HEAD
        << (uint32_t) 0xAA
        << size
        << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
        << count;
-    
+
     // 将提取出来的战斗机信息添加到包体中
     for (i = 0; i < count; i++)
     {
         id = g_ZDJ_TargetPlatID[i];
-        
+
         pEntityReport = DataBase::instance().getEntityReport(id);
 
         if ( !pEntityReport )
@@ -257,11 +279,11 @@ int UdpHelper::sendTargetPositionState()
             count--;
             continue;
         }
-        
-		in << (uint32_t) pEntityReport->platId
-		   << pEntityReport->geodeticLocationLat
-		   << pEntityReport->geodeticLocationLon
-		   << (double) 0.01; // 噪声强度
+
+        in << (uint32_t) pEntityReport->platId
+           << pEntityReport->geodeticLocationLat
+           << pEntityReport->geodeticLocationLon
+           << (double) 0.01; // 噪声强度
     }
 
     if ( !count )
@@ -277,15 +299,22 @@ int UdpHelper::sendTargetPositionState()
     return 0;
 }
 
-
-int UdpHelper::send_ZDJ_InitPosition()
+/*****************************************************************************
+ * 函 数 名  : UdpHelper.sendFighterPositionState
+ * 负 责 人  : 曾日希 施晓红修改
+ * 创建日期  : 2020年9月7日
+ * 函数功能  : 从实体库中提取战斗机实时位置后打包发送
+ * 输入参数  : 无
+ * 输出参数  : 无
+ * 返 回 值  : void
+*****************************************************************************/
+int UdpHelper::sendFlightPositionState()
 {
     int i, size, id;
     u_char count;
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
-    
     QByteArray ba;
-    QDataStream in(&ba, QIODevice::WriteOnly);
+    QDataStream in(&ba, QIODevice::WriteOnly);// 往QByteArray中流入数据
 
 #if 0 // 确定是否需要设置大小端
     in.setFloatingPointPrecision(QDataStream::SinglePrecision);
@@ -294,34 +323,42 @@ int UdpHelper::send_ZDJ_InitPosition()
 
     count = ARRAY_SIZE(g_ZDJ_nPlatID);
 
-    size = sizeof(package_head_t) + 4 + 1 + 
-           (count*sizeof(zdj_position_state_t)) + 4;
+    // 计算包长度
+    size = sizeof(package_head_t) + sizeof(uint8_t) +
+    sizeof(zdj_position_state_t) * count + sizeof(uint32_t);
 
     in << ZDJ_PACK_HEAD
-       << (uint32_t) 0xF1
+       << (uint32_t) 0xAA
        << size
+       << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
        << count;
 
+    // 将提取出来的战斗机信息添加到包体中
     for (i = 0; i < count; i++)
     {
-        id = g_ZDJ_nPlatID[i];
+        id = g_ZDJ_TargetPlatID[i];
 
         pEntityReport = DataBase::instance().getEntityReport(id);
 
         if ( !pEntityReport )
         {
-            return -1;
+            count--;
+            continue;
         }
-        
+
         in << (uint32_t) pEntityReport->platId
-		   << pEntityReport->geodeticLocationLon
-		   << pEntityReport->geodeticLocationLat
+           << pEntityReport->geodeticLocationLat
+           << pEntityReport->geodeticLocationLon
            << pEntityReport->topographicVelocityX
-           << pEntityReport->topographicVelocityY
-	       << pEntityReport->topographicVelocityZ // 总速度
-	       << (double) 0.0;// 航向信息
+           << pEntityReport->topographicVelocityY; // 噪声强度
     }
 
+    if ( !count )
+    {
+        return -1;
+    }
+
+    // 添加包尾信息
     in << ZDJ_PACK_TAIL;
 
     _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
@@ -329,6 +366,44 @@ int UdpHelper::send_ZDJ_InitPosition()
     return 0;
 }
 
+/*****************************************************************************
+ * 函 数 名  : UdpHelper.sendTargetPositionState
+ * 负 责 人  : 曾日希 施晓红修改
+ * 创建日期  : 2020年9月7日
+ * 函数功能  : 向战斗机发送控制权信息
+ * 输入参数  : 无
+ * 输出参数  : 无
+ * 返 回 值  : void
+*****************************************************************************/
+int UdpHelper::sendFlightControlState(bool is_controlled)
+{
+    int size;
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
+    QByteArray ba;
+    QDataStream in(&ba, QIODevice::WriteOnly);// 往QByteArray中流入数据
+
+#if 0 // 确定是否需要设置大小端
+    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    in.setByteOrder(QDataStream::LittleEndian);
+#endif
+
+    // 计算包长度
+    size = sizeof(package_head_t) + sizeof(uint8_t) +
+    sizeof(uint8_t) + sizeof(uint32_t);
+
+    in << ZDJ_PACK_HEAD
+       << (uint32_t) 0xAA
+       << size
+       << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
+       << (uint8_t)is_controlled;
+
+    // 添加包尾信息
+    in << ZDJ_PACK_TAIL;
+
+    _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
+
+    return 0;
+}
 
 /*****************************************************************************
  * 函 数 名  : UdpHelper.parsePackage
@@ -361,14 +436,14 @@ void UdpHelper::parsePackage(QByteArray ba)
     }
 
     ba.truncate(packSize - tailSize);
-    
-    if ( 1 == result )
+
+    QDataStream out(ba);
+
+    if ( 1 == result || 2 == result )
     {
         out.setFloatingPointPrecision(QDataStream::SinglePrecision);
         out.setByteOrder(QDataStream::LittleEndian);
     }
-
-    QDataStream out(ba);
 
     // 解析包头
     result = parseHead(out, &packageHead);
@@ -386,20 +461,25 @@ void UdpHelper::parsePackage(QByteArray ba)
 
     type = packageHead.msgType;
 
-    while ( !out.atEnd() )
+    n = ARRAY_SIZE(s_MsgProcess);
+
+    // 根据包头和包体的消息类型选择相应的处理函数
+    for (i = 0; i < n; i++)
     {
-        n = ARRAY_SIZE(s_MsgProcess);
-        for (i = 0; i < n; i++)
+        if ( s_MsgProcess[i].commobj == _eCommObject &&
+             s_MsgProcess[i].msgType == type)
         {
-            if ( s_MsgProcess[i].commobj == _eCommObject &&
-                 s_MsgProcess[i].msgType == type)
-            {
-                s_MsgProcess[i].processData(s_MsgProcess[i].allType, out);
-                
-                break;
-            }
+            s_MsgProcess[i].processData(s_MsgProcess[i].allType, out);
+            
+            break;
         }
-    }   
+    }
+
+    if ( !out.atEnd() )
+    {
+        qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"消息流处理错误,存在未处理消息.";
+        return;
+    }
 }
 
 
@@ -418,16 +498,20 @@ int UdpHelper::parseTail(u_char *p)
 
     memcpy(&tail, p, sizeof(tail));
 
-    if ( tail == (uint32_t) 0x0A0D0A0D )
+    if ( tail == ZDJ_PACK_TAIL )
     {
         return 0;
     }
 
-    if ( htonl(tail) == (uint32_t) 0x0A0D0A0D )
+    if ( htonl(tail) == ZDJ_PACK_TAIL )
     {
         return 1;
     }
 
+    if ( htonl(tail) == ENTITY_PACK_TAIL )
+    {
+        return 2;
+    }
     return -1;
 }
 
@@ -483,3 +567,86 @@ void UdpHelper::onReadyRead()
     }
 }
 
+
+/*****************************************************************************
+ * 函 数 名  : UdpHelper.sendEntityPositionState
+ * 负 责 人  : 曾日希 施晓红改
+ * 创建日期  : 2020年9月7日
+ * 函数功能  : 从实体库中提取所有实体信息后打包发送给协同探测端
+ * 输入参数  : 无
+ * 输出参数  : 无
+ * 返 回 值  : void
+*****************************************************************************/
+int UdpHelper::sendEntityPositionState()
+{
+    int i, size, id;
+    u_char count;
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
+    QByteArray ba;
+    QDataStream in(&ba, QIODevice::WriteOnly);// 往QByteArray中流入数据
+
+#if 0 // 确定是否需要设置大小端
+    in.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    in.setByteOrder(QDataStream::LittleEndian);
+#endif
+
+    count = ARRAY_SIZE(g_Entity_nPlatID);
+
+    // 计算包长度
+    size = sizeof(package_head_t) + sizeof(uint8_t) +
+    sizeof(entity_state_t) * count + sizeof(uint32_t);///////???????target_position_state_t
+
+//    size=sizeof(package_head_t) + sizeof(uint8_t) +
+//            28 * count + sizeof(uint32_t);
+    uint32_t _timeStamp=0;
+    QTime tt=QDateTime::currentDateTime().time();
+    _timeStamp=(tt.hour()*3600+tt.minute()*60+tt.second())*1000+tt.msec();//按照情报方定义的当天经过的毫秒数
+
+    in << ENTITY_PACK_HEAD
+       << COR_MSG_TYPE_REAL_TIME_LOCATION_ENTITY
+       << size
+       << _timeStamp// 流入当前时间戳
+       << count;
+
+    // 将提取出来的战斗机信息添加到包体中
+    for (i = 0; i < count; i++)
+    {
+        id = g_Entity_nPlatID[i];
+
+        pEntityReport = DataBase::instance().getEntityReport(id);
+
+        if ( !pEntityReport )
+        {
+            count--;
+            continue;
+        }
+
+        in << (uint32_t) pEntityReport->platId;
+        if(g_Enemy_Ship_nPlatID.contains(pEntityReport->platId))//空海标识
+            in<<(uint32_t)1;
+        else
+            in<<(uint16_t)0;
+        if(g_Enemy_Ship_nPlatID.contains(pEntityReport->platId)||g_Enemy_Fighter_nPlatID.contains(pEntityReport->platId))//敌我标识
+            in<<(uint32_t)0;
+        else
+            in<<(uint16_t)1;
+        in << pEntityReport->geodeticLocationLat
+           << pEntityReport->geodeticLocationLon
+           << pEntityReport->geodeticLocationAlt
+           << pEntityReport->topographicPhi
+           << pEntityReport->topographicPsi
+           << pEntityReport->topographicTheta;
+    }
+
+    if ( !count )
+    {
+        return -1;
+    }
+
+    // 添加包尾信息
+    in << ENTITY_PACK_TAIL;
+
+    _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
+
+    return 0;
+}

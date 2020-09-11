@@ -17,6 +17,14 @@
 #include "commondef.h"
 #include "singleton.h"
 
+#define PATH_CHANGE_REQ_COUNT 10// 航线的位置数量
+
+typedef struct
+{
+    uint32_t count;
+    vec3_t path[PATH_CHANGE_REQ_COUNT];   
+}path_change_req_t;
+
 // 战斗机和目标的搜索范围
 static double g_distance = 500.0;
 
@@ -37,6 +45,7 @@ public:
     void releaseEntity(int key);
     void makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst, 
         const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
+    void processPathChange(void *pData);
     void processRecvData(int nDataType, void *pData);
     my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
@@ -47,6 +56,7 @@ private:
 
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
+    QMap<uint32_t, path_change_req_t *> _dbPathReq;
     // 用于存接收到的消息类型
     QList<my_msg_t> _qListMyMsgs;
     QMutex _entityMutex;
@@ -62,5 +72,6 @@ extern double getDistance(double lat1, double lng1, double lat2, double lng2);
 
 void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out);
 void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out);
+void Recv_COR_TrackReport(uint32_t type, QDataStream &out);
 
 #endif // DATABASE_H

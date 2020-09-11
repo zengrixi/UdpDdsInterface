@@ -15,16 +15,16 @@
 /*----------------------------------------------*
  * 数据类型定义                                       *
  *----------------------------------------------*/
-typedef signed char 		int8_t;		 
-typedef unsigned char       uint8_t;   
-typedef signed short        int16_t;
-typedef unsigned short      uint16_t;
-typedef signed int          int32_t;
-typedef unsigned int        uint32_t;
-typedef signed long long    int64_t;
-typedef unsigned long long  uint64_t;
+typedef signed char             int8_t;
+typedef unsigned char           uint8_t;
+typedef signed short            int16_t;
+typedef unsigned short          uint16_t;
+typedef signed int              int32_t;
+typedef unsigned int            uint32_t;
+typedef signed long int         int64_t;
+typedef unsigned long int       uint64_t;
 
-typedef unsigned char       u_char;                   // 类型兼容
+typedef unsigned char           u_char;                   // 类型兼容
 
 
 /*----------------------------------------------*
@@ -40,17 +40,15 @@ typedef unsigned char       u_char;                   // 类型兼容
 #define PI                              3.141592653
 #define EARTH_RADIUS                    6378.137        // 地球近似半径
 
+static QList<int> g_Entity_nPlatID;//所有实体ID
+static QList<int> g_SAR_nPlatID;// SAR无人机PlatID
+static QList<int> g_UVA_nPlatID;// 雷达无人机PlatID
+static QList<int> g_AEW_nPlatID;// 预警机PlatID(敌我）
+static QList<int> g_Enemy_Ship_nPlatID;// 海上目标PlatID（敌方船只）
+static QList<int> g_Enemy_Fighter_nPlatID;// 战斗机目标PlatID（敌方？）
+static QList<int> g_Fight_nPlatID;// 我方战斗机平台ID
 
-/*----------------------------------------------*
- * 常量定义                                         *
- *----------------------------------------------*/
-// 战斗机平台ID
-static const int g_ZDJ_nPlatID[] = 
-{
-    313, 314, 315, 316, 317, 38, 
-    39, 310, 312, 3, 34, 31, 35
-};
-// 战斗机目标PlatID
+// 战斗机目标PlatID（敌方？）
 static const int g_ZDJ_TargetPlatID[] =
 {
     114, 117, 115, 116, 110,
@@ -58,6 +56,12 @@ static const int g_ZDJ_TargetPlatID[] =
 };
 
 
+// 我方战斗机平台ID
+static const int g_ZDJ_nPlatID[] =
+{
+    313, 314, 315, 316, 317, 38,
+    39, 310, 312, 3, 34, 31, 35
+};
 /*----------------------------------------------*
  * 全局枚举定义                                       *
  *----------------------------------------------*/
@@ -75,8 +79,9 @@ typedef enum
 {
     RECV_MSGTYPE_WRJ_ENTITY_POS,                        // 无人机自身位置信息
     RECV_MSGTYPE_ZDJ_ENTITY_POS,                        // 战斗机自身实时位置
-    RECV_MSGTYPE_ZDJ_TRACK_REPORT,                      // 战斗机目标实时位置
-    DDS_MSGTYPE_RADAR_TRACK_REPORT                      // 雷达模拟器目标航机
+    RECV_MSGTYPE_ZDJ_TRACK_REPORT,                      // 战斗机目标航迹
+    DDS_MSGTYPE_RADAR_TRACK_REPORT,                     // 雷达模拟器目标航迹
+    RECV_MSGTYPE_COR_TRACK_REPORT                       // 协同探测目标航迹
 }MsgTypeAll;
     
 // 导调DDS消息类型
@@ -109,7 +114,7 @@ typedef struct
     int32_t lon;
     int32_t lat;
     int32_t alt;         
-}wrj_pos_t;
+}entity_pos_t;
 
 // 无人机姿态
 typedef struct
@@ -117,7 +122,7 @@ typedef struct
     int16_t yaw;
     int16_t pitch;
     int16_t roll;          
-}wrj_attitude_t;
+}entity_attitude_t;
 
 // 无人机数据帧头
 typedef struct
@@ -132,8 +137,8 @@ typedef struct
     uint8_t dataID;
     uint8_t dataLength;
     uint8_t id;
-     wrj_pos_t pos;
-    wrj_attitude_t attitude;
+    entity_pos_t pos;
+    entity_attitude_t attitude;
 }data_frame_t;
 
 // 包尾数据校验
@@ -152,19 +157,20 @@ typedef struct
     crc_check_t checkBit;
 }wrj_position_state_t;
 
-// 战斗机位置
+// 位置2d
 typedef struct
 {
-    double lon_f;
-    double lat_f;       
-}zdj_pos_t;
+    double x;
+    double y;
+}vec2_t;
 
-// 战斗机速度
-typedef struct
+typedef union
 {
-    double vel_x_f;// 速度x
-    double vel_y_f;// 速度y      
-}zdj_velocity_t;
+    struct { double x, y, z; };
+    struct { vec2_t xy; };
+    struct { double _x; vec2_t yz; };
+    double v[3];
+}vec3_t;
 
 // 数据包头
 typedef struct
@@ -178,8 +184,8 @@ typedef struct
 typedef struct
 {
     uint32_t id;
-    zdj_pos_t pos;// 经纬
-    zdj_velocity_t velocity;// 速度
+    vec2_t pos;// 经纬
+    vec2_t velocity;// 速度
     double course_f;// 航向
 }zdj_position_state_t;
 
@@ -193,11 +199,11 @@ typedef struct
     uint32_t packTail;
 }zdj_position_state_list_t;
 
-// 航迹点
+// 目标实时位置
 typedef struct
 {
     uint32_t id;
-    zdj_pos_t pos;// 经纬
+    vec2_t pos;// 经纬
     double err;// 距离误差      
 }zdj_target_pos_t;
 
@@ -211,22 +217,23 @@ typedef struct
     uint32_t packTail;
 }zdj_target_track_t;
 
-// ZDJ初始位置姿态
-typedef struct
-{
-    package_head_t packageHead;
-    uint8_t count;
-    zdj_position_state_t *pPositionState;
-    uint32_t packTail;
-}zdj_init_position_state_t;
-
 // ZDJ目标信息
 typedef struct
 {
     uint32_t id;
-    zdj_pos_t pos;
+    vec2_t pos;
     double noiseIntensity;  // 噪声强度
 }target_position_state_t;
+
+// 实体信息
+typedef struct
+{
+    uint32_t id;
+    uint16_t airSeaFlag;//空海标识
+    uint16_t firendEnemyFlag;//敌我标识
+    entity_pos_t pos;//位置信息
+    entity_attitude_t attitude;  //姿态角
+}entity_state_t;//协同探测用
 
 // ZDJ目标实时位置信息
 typedef struct
@@ -236,6 +243,36 @@ typedef struct
     target_position_state_t *pPositionState;
     uint32_t packTail;
 }target_position_state_list_t;
+
+// XTTC航迹点信息
+typedef struct
+{
+    vec3_t pos;// 经纬高
+    double headingAngle;// 航向角
+}xttc_track_point_t;
+
+// XTTC目标信息
+typedef struct
+{
+    uint8_t type;
+    double typeComfidence;// 类型置信度
+    uint16_t ffAttriibute;// 敌我属性
+    double rate;// 速率
+    vec3_t velocity;// 速度x、y、z
+    uint16_t trackID;// 航迹号
+    uint8_t trackPointsCount;// 航迹点数量
+    xttc_track_point_t *pTrackPoints;
+}xttc_target_t;
+
+// XTTC目标航迹
+typedef struct
+{
+    package_head_t packageHead;
+    uint32_t timestamp;
+    uint8_t targetCount;
+    xttc_target_t *pTargets;
+    uint32_t packageTail;
+}xttc_target_track_t;
 
 // 数据接收结构体
 typedef struct
