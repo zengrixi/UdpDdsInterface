@@ -11,13 +11,13 @@
 #ifndef ONWORKER_H
 #define ONWORKER_H
 
-#include <QObject>
+#include <QThread>
 
 #include "savelog.h"
 #include "singleton.h"
 #include "udphelper.h"
 
-class OnWorker : public QObject
+class OnWorker : public QThread
 {
     Q_OBJECT
     SINGLETON(OnWorker)
@@ -33,12 +33,12 @@ private:
     QString _ZDJ_IP,_WRJ_IP,_COR_IP;
     uint16_t _ZDJ_PORT,_WRJ_PORT,_COR_PORT;
     void readConfig();
-
-signals:
-
+protected:
+    virtual void run() Q_DECL_OVERRIDE;
 public slots:
     void onStartUdp();
     void onConnectSql();
+    void onStartWRJRecv();
 };
 
 #endif // ONWORKER_H

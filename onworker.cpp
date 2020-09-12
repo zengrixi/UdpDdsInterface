@@ -3,7 +3,7 @@
 #include <QApplication>
 #include <QSettings>
 
-OnWorker::OnWorker(QObject *parent) : QObject(parent)
+OnWorker::OnWorker(QObject *parent) : QThread(parent)
 {
     SaveLog::instance().start();
     readConfig();
@@ -14,6 +14,21 @@ OnWorker::~OnWorker()
     SaveLog::instance().stop();
     SaveLog::instance().deleteLater();
 }
+
+
+void OnWorker::run()
+{
+    WRJ_Module::instance().WRJ_send_CtrlAuthorityPacket(WRJ_Request_Ctrl);
+    
+    while ( 1 )
+    {
+        onStartWRJSend();
+        onStartWRJRecv();
+    }
+
+    WRJ_Module::instance().WRJ_send_CtrlAuthorityPacket(WRJ_Request_Release);
+}
+
 
 void OnWorker::onStartUdp()
 {
@@ -28,6 +43,41 @@ void OnWorker::onStartUdp()
     _pCOR_Udp->Init(_COR_IP,_COR_PORT);
     _pCOR_Udp->start();
 }
+
+
+void OnWorker::onStartWRJRecv()
+{
+    WRJ_POSITIONSTATE_STRU *p;
+
+    p = WRJ_Module::instance().WRJ_TakePosition();
+
+    if ( p )
+    {
+        DataBase::instance().processRecvData(RECV_MSGTYPE_WRJ_ENTITY_POS, p);
+
+        free(p);
+    }
+}
+
+
+void OnWorker::onStartWRJSend()
+{
+    int id;
+    WayPoint_Struct way;
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
+
+    id = 41;
+    pEntityReport = DataBase::instance().getEntityReport(id);
+    if ( pEntityReport )
+    {
+        way.Lon = (int) (pEntityReport->geodeticLocationLon * pow(10, 2));
+        way.Lat = (int) (pEntityReport->geodeticLocationLon * pow(10, 2));
+        way.Lon = (int) (pEntityReport->geodeticLocationLon * 100);
+
+        WRJ_Module::WRJ_send_TrackDataPacket(&way, 1);
+    }
+}
+
 
 /*****************************************************************************
  * 函 数 名  : OnWorker.onConnectSql

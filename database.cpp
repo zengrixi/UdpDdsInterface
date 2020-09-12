@@ -107,22 +107,70 @@ void DataBase::makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst,
 }
 
 
-void DataBase::processPathChange(void *pData)
+void DataBase::processPathChange(WRJ_POSITIONSTATE_STRU *pInstance)
+{
+    uint32_t id, n;
+    path_change_req_t *p;
+    LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq;
+    QMap<uint32_t, path_change_req_t *>::iterator it;
+
+    id = 41;// 目前为固定一个
+    it = _wrjPathReq.find(id);
+    if ( it != _wrjPathReq.end() )
+    {
+        p = it.value();
+    }
+    else
+    {
+        p = (path_change_req_t *)malloc(sizeof(path_change_req_t));
+        p->count = 0;
+        _wrjPathReq.insert(id, p);
+    }
+
+    n = p->count;
+    if ( n < PATH_CHANGE_REQ_COUNT )
+    {
+        p->path[n].x = pInstance->Lon;
+        p->path[n].y = pInstance->Lat;
+        p->path[n].z = pInstance->Alt;
+        p->count++;
+    }
+    else
+    {
+        p->count = 0;
+        
+        pPathChangeReq = LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
+        pPathChangeReq->platId = id;
+        
+        LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
+        for (j = 0; j < n; j++)
+        {
+            posDatas[j].lon_f = p->path[j].x;
+            posDatas[j].lat_f = p->path[j].y;
+            posDatas[j].alt_f = p->path[j].z;
+        }
+        
+        LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+        (&pPathChangeReq->PosList, posDatas, n);
+        
+        processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
+    }
+}
+
+
+void DataBase::processPathChange(zdj_position_state_list_t *pInstance)
 {
     int i, j;
     uint32_t id, n;
     path_change_req_t *p;
-    zdj_position_state_list_t *pInstance;
     LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq;
     QMap<uint32_t, path_change_req_t *>::iterator it;
-
-    pInstance = (zdj_position_state_list_t *)pData;
 
     for (i = 0; i < pInstance->count; i++)
     {
         id = pInstance->pPositionState[i].id;
-        it = _dbPathReq.find(id);
-        if ( it != _dbPathReq.end() )
+        it = _wrjPathReq.find(id);
+        if ( it != _wrjPathReq.end() )
         {
             p = it.value();
         }
@@ -130,7 +178,7 @@ void DataBase::processPathChange(void *pData)
         {
             p = (path_change_req_t *)malloc(sizeof(path_change_req_t));
             p->count = 0;
-            _dbPathReq.insert(id, p);
+            _wrjPathReq.insert(id, p);
         }
 
         n = p->count;
@@ -190,32 +238,12 @@ void DataBase::processRecvData(int nDataType, void *pData)
     {
         case RECV_MSGTYPE_WRJ_ENTITY_POS:
         {
-            wrj_position_state_t *pInstance = (wrj_position_state_t *)pData;
-            int nCount = (pInstance->packgeLen-2) / 21;
-            for (i = 0; i < nCount; i++)
-            {
-                LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq =
-                LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
-                // 无人机平台ID
-                pPathChangeReq->platId = 4;
-                
-                // 拷贝无人机编队到seq队列
-                int nLength = 1;
-                LHZS::VRFORCE_COMMAND::POS_DATA posDatas[nLength];
-                posDatas[0].lon_f = pInstance->pDataFrame[i].pos.lon / pow(10, 7);
-                posDatas[0].lat_f = pInstance->pDataFrame[i].pos.lat / pow(10, 7);
-                posDatas[0].alt_f = pInstance->pDataFrame[i].pos.alt / 100.0;
-             
-                LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
-                (&pPathChangeReq->PosList, posDatas, nLength);
-                
-                processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
-            }
+            processPathChange((WRJ_POSITIONSTATE_STRU *) pData);
             break;
         }
         case RECV_MSGTYPE_ZDJ_ENTITY_POS :
         {
-            processPathChange(pData);
+            processPathChange((zdj_position_state_list_t *) pData);
             break;
         }
         case RECV_MSGTYPE_ZDJ_TRACK_REPORT :

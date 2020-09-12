@@ -25,9 +25,6 @@ typedef struct
     vec3_t path[PATH_CHANGE_REQ_COUNT];   
 }path_change_req_t;
 
-// 战斗机和目标的搜索范围
-static double g_distance = 500.0;
-
 class DataBase
 {
     SINGLETON(DataBase)
@@ -45,7 +42,8 @@ public:
     void releaseEntity(int key);
     void makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst, 
         const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
-    void processPathChange(void *pData);
+    void processPathChange(WRJ_POSITIONSTATE_STRU *pData);
+    void processPathChange(zdj_position_state_list_t *pData);
     void processRecvData(int nDataType, void *pData);
     my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
@@ -56,7 +54,8 @@ private:
 
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
-    QMap<uint32_t, path_change_req_t *> _dbPathReq;
+    QMap<uint32_t, path_change_req_t *> _wrjPathReq;
+    QMap<uint32_t, path_change_req_t *> _wrjPathReq;
     // 用于存接收到的消息类型
     QList<my_msg_t> _qListMyMsgs;
     QMutex _entityMutex;

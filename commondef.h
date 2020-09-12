@@ -7,6 +7,9 @@
 #include "Command/lhzs-vrforce-commandSupport.h"
 #include "Target/target.h"
 #include "Target/targetSupport.h"
+#include "wrj_module.h"
+#include "wrj_function_variable.h"
+
 #include "testinfo.h"
 
 #include <QDebug>
@@ -108,54 +111,6 @@ enum TESTTYPE
  * 全局结构体定义                                      *
  *----------------------------------------------*/
 #pragma pack(1)
-// 无人机位置
-typedef struct
-{
-    int32_t lon;
-    int32_t lat;
-    int32_t alt;         
-}entity_pos_t;
-
-// 无人机姿态
-typedef struct
-{
-    int16_t yaw;
-    int16_t pitch;
-    int16_t roll;          
-}entity_attitude_t;
-
-// 无人机数据帧头
-typedef struct
-{
-    uint8_t first;
-    uint8_t second;
-}frame_head_t;
-
-// 无人机位置信息
-typedef struct
-{
-    uint8_t dataID;
-    uint8_t dataLength;
-    uint8_t id;
-    entity_pos_t pos;
-    entity_attitude_t attitude;
-}data_frame_t;
-
-// 包尾数据校验
-typedef struct
-{
-    uint8_t first;
-    uint8_t second;
-}crc_check_t;
-    
-// 飞控平台接收的无人机位置信息
-typedef struct
-{
-    frame_head_t frameHead;
-    uint8_t packgeLen;
-    data_frame_t *pDataFrame;
-    crc_check_t checkBit;
-}wrj_position_state_t;
 
 // 位置2d
 typedef struct

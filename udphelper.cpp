@@ -257,10 +257,8 @@ int UdpHelper::sendTargetPositionState()
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
-    sizeof(target_position_state_list_t) * count + sizeof(uint32_t);///////???????target_position_state_t
+    sizeof(target_position_state_list_t) * count + sizeof(uint32_t);
 
-//    size=sizeof(package_head_t) + sizeof(uint8_t) +
-//            28 * count + sizeof(uint32_t);
     in << ZDJ_PACK_HEAD
        << (uint32_t) 0xAA
        << size
@@ -377,7 +375,7 @@ int UdpHelper::sendFlightPositionState()
 *****************************************************************************/
 int UdpHelper::sendFlightControlState(bool is_controlled)
 {
-    int size;
+    uint32_t size;
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
     QByteArray ba;
     QDataStream in(&ba, QIODevice::WriteOnly);// 往QByteArray中流入数据

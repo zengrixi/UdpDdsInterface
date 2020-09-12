@@ -30,7 +30,7 @@ void MdsSendMsg::ddsInit()
     "LHZS::SDI_TRACK_REPORT");
 }
 
-bool MdsSendMsg::onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST *pInstace)
+bool MdsSendMsg::onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST *pInstance)
 {
     QMutexLocker mutexLocker(&_mutex);
 
@@ -41,7 +41,7 @@ bool MdsSendMsg::onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_L
     // 第三个参数为探测接收端的超时时间，单位为秒，默认为2秒
     // 第四个参数为轮循探测接收端的周期，单位为微秒，默认为10微秒
     // 如不想等待有无接收端就发送消息则第二个参数为0
-    return _pUAV_Entity_StateList->publishMsg(pInstace, 0);
+    return _pUAV_Entity_StateList->publishMsg(pInstance, 0);
 }
 
 bool MdsSendMsg::onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)

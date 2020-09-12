@@ -31,7 +31,7 @@ public:
     // 数据的发送处理
     // -----------------------------
     // 发送实体数据
-    bool onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST *pInstace);
+    bool onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST *pInstance);
 
     // 发送指挥引导命令
     bool onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance);
