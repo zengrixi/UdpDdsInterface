@@ -96,8 +96,10 @@ void DataBase::releaseEntity(int key)
  * 输出参数  : 无
  * 返 回 值  : void
 *****************************************************************************/
-void DataBase::makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst,
-     const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated)
+void DataBase::makeCopy
+    (LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst
+    , const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src
+    , bool bAllocated)
 {
     if (bAllocated)
     {
@@ -107,9 +109,40 @@ void DataBase::makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst,
 }
 
 
+/*****************************************************************************
+ * 函 数 名  : DataBase.recordPathChangeReq
+ * 负 责 人  : 曾日希
+ * 创建日期  : 2020年9月12日
+ * 函数功能  : 将已经存储的实体路径转成DDS路径信息发出           
+ * 输入参数  : LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1  将通过DDS发出的路径结构
+               path_change_req_t *p2                       已存储路径结构
+               uint32_t n                                  路径数量
+ * 输出参数  : 无
+ * 返 回 值  : void
+*****************************************************************************/
+void DataBase::recordPathChangeReq
+    (LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1
+    , path_change_req_t *p2
+    , uint32_t n)
+{
+    uint32_t i;
+    LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
+    
+    for (i = 0; i < n; i++)
+    {
+        posDatas[i].lon_f = p2->path[i].x;
+        posDatas[i].lat_f = p2->path[i].y;
+        posDatas[i].alt_f = p2->path[i].z;
+    }
+    
+    LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+    (&p1->PosList, posDatas, n);
+}
+
+
 void DataBase::processPathChange(WRJ_POSITIONSTATE_STRU *pInstance)
 {
-    uint32_t id, n;
+    uint32_t i, id, n;
     path_change_req_t *p;
     LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq;
     QMap<uint32_t, path_change_req_t *>::iterator it;
@@ -142,16 +175,7 @@ void DataBase::processPathChange(WRJ_POSITIONSTATE_STRU *pInstance)
         pPathChangeReq = LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
         pPathChangeReq->platId = id;
         
-        LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
-        for (j = 0; j < n; j++)
-        {
-            posDatas[j].lon_f = p->path[j].x;
-            posDatas[j].lat_f = p->path[j].y;
-            posDatas[j].alt_f = p->path[j].z;
-        }
-        
-        LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
-        (&pPathChangeReq->PosList, posDatas, n);
+        recordPathChangeReq(pPathChangeReq, p, n);
         
         processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
     }
@@ -195,16 +219,7 @@ void DataBase::processPathChange(zdj_position_state_list_t *pInstance)
             pPathChangeReq = LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
             pPathChangeReq->platId = id;
             
-            LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
-            for (j = 0; j < n; j++)
-            {
-                posDatas[j].lon_f = p->path[j].x;
-                posDatas[j].lat_f = p->path[j].y;
-                posDatas[j].alt_f = p->path[j].z;
-            }
-            
-            LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
-            (&pPathChangeReq->PosList, posDatas, n);
+            recordPathChangeReq(pPathChangeReq, p, n);
             
             processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
         }
@@ -338,7 +353,7 @@ LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *DataBase::getEntityReport(int id)
 *****************************************************************************/
 float htonf(float hostfloat)
 {
-    typedef union _BYTEORDER
+    typedef union
     {
         float fTemp;
         uint8_t szTemp[4];
