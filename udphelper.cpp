@@ -9,7 +9,8 @@
 const static pack_type_t s_packType[] = 
 {
     {ZDJ_PACK_HEAD, ZDJ_OBJECT},
-    {XTTC_PACK_HEAD, XTTC_OBJECT}
+    {XTTC_PACK_HEAD, XTTC_OBJECT},
+    {XK_PACK_HEAD, XK_OBJECT}
 };
 
 
@@ -33,6 +34,18 @@ const static msg_process_t s_MsgProcess[] =
         COR_MSG_TYPE_REAL_TIME_LOCATION_TRACK,
         RECV_MSGTYPE_COR_TRACK_REPORT,
         Recv_COR_TrackReport
+    },
+    {
+        XK_OBJECT,
+        XK_MSG_TYPE_CONTROL,
+        RECV_MSGTYPE_XK_WRJ_CONTROL,
+        Recv_XK_WRJ_Control
+    },
+    {
+        XK_OBJECT,
+        XK_MSG_TYPE_ROUTE,
+        RECV_MSGTYPE_XK_WRJ_ROUTE,
+        Recv_XK_WRJ_Route
     }
 };
 
@@ -592,10 +605,8 @@ int UdpHelper::sendEntityPositionState()
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
-    sizeof(entity_state_t) * count + sizeof(uint32_t);///////???????target_position_state_t
+    sizeof(entity_state_t) * count + sizeof(uint32_t);
 
-//    size=sizeof(package_head_t) + sizeof(uint8_t) +
-//            28 * count + sizeof(uint32_t);
     uint32_t _timeStamp=0;
     QTime tt=QDateTime::currentDateTime().time();
     _timeStamp=(tt.hour()*3600+tt.minute()*60+tt.second())*1000+tt.msec();//按照情报方定义的当天经过的毫秒数

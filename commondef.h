@@ -74,6 +74,7 @@ typedef enum
     WRJ_OBJECT,
     ZDJ_OBJECT,
     XTTC_OBJECT,
+    XK_OBJECT,
     None_OBJECT,
 }CommandObject;
 
@@ -81,6 +82,8 @@ typedef enum
 typedef enum
 {
     RECV_MSGTYPE_WRJ_ENTITY_POS,                        // 无人机自身位置信息
+    RECV_MSGTYPE_XK_WRJ_CONTROL,                        // 显控发出无人机控制
+    RECV_MSGTYPE_XK_WRJ_ROUTE,                          // 显控发出无人机航路
     RECV_MSGTYPE_ZDJ_ENTITY_POS,                        // 战斗机自身实时位置
     RECV_MSGTYPE_ZDJ_TRACK_REPORT,                      // 战斗机目标航迹
     DDS_MSGTYPE_RADAR_TRACK_REPORT,                     // 雷达模拟器目标航迹
@@ -126,6 +129,7 @@ typedef union
     struct { double _x; vec2_t yz; };
     double v[3];
 }vec3_t;
+#define VEC3(x, y, z) { { x, y, z } }
 
 // 数据包头
 typedef struct
@@ -134,6 +138,25 @@ typedef struct
     uint32_t msgType;
     uint32_t packSize;
 }package_head_t;
+
+// WRJ控制权 非0为控制
+typedef struct
+{
+    package_head_t packageHead;
+    uint32_t id;
+    uint8_t control;
+    uint32_t packTail;
+}wrj_control_t;
+
+// 无人机位置信息
+typedef struct
+{
+    package_head_t packageHead;
+    uint32_t id;
+    uint8_t count;
+    vec3_t *pos;
+    uint32_t packTail;
+}wrj_route_t;
 
 // ZDJ位置信息
 typedef struct
@@ -186,8 +209,8 @@ typedef struct
     uint32_t id;
     uint16_t airSeaFlag;//空海标识
     uint16_t firendEnemyFlag;//敌我标识
-    entity_pos_t pos;//位置信息
-    entity_attitude_t attitude;  //姿态角
+    vec3_t pos;//位置信息
+    vec3_t attitude;  //姿态角
 }entity_state_t;//协同探测用
 
 // ZDJ目标实时位置信息

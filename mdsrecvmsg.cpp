@@ -35,20 +35,20 @@ void MdsRecvMsg::run()
     // 创建发布/订阅通信器类对象，将某一消息结构体与消息主题进行绑定
     // 参数可以使用根目录下的组件配置文件名 softwareBlueprint.xml 中定义
     // 也可以自行传入参数 domainID, topic等
-    unsigned int uiDomainID = 0;
-    QString sTopicName = LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST_TOPIC;
+    unsigned int id = 0;
+    QString topic = LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST_TOPIC;
 
     pEntityRecvCom = 
     new PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> 
-    (uiDomainID, sTopicName.toStdString(), true);
-    if (!pEntityRecvCom)
+    (id, topic.toStdString(), true);
+    if ( !pEntityRecvCom )
     {
         return;
     }
 
     pTrackRecvCom = 
     new PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)>
-    (uiDomainID, "LHZS::SDI_TRACK_REPORT");
+    (id, "LHZS::SDI_TRACK_REPORT");
     if ( !pTrackRecvCom )
     {
         return;

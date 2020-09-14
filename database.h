@@ -73,5 +73,8 @@ extern double getDistance(double lat1, double lng1, double lat2, double lng2);
 void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out);
 void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out);
 void Recv_COR_TrackReport(uint32_t type, QDataStream &out);
+void Recv_XK_WRJ_Control(uint32_t type, QDataStream &out);
+void Recv_XK_WRJ_Route(uint32_t type, QDataStream &out);
+
 
 #endif // DATABASE_H

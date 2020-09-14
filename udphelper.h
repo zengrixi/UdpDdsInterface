@@ -24,6 +24,8 @@
 #define ZDJ_PACK_TAIL                                   (uint32_t) 0x0A0D0A0D
 #define ENTITY_PACK_HEAD                                (uint32_t) 0x0000FFFF
 #define ENTITY_PACK_TAIL                                (uint32_t) 0xEEEE0000
+#define XK_PACK_HEAD                                    (uint32_t) 0xFFFF0000
+#define XK_PACK_TAIL                                    (uint32_t) 0x0A0D0A0D
 
 
 // 战斗机消息类型
@@ -33,6 +35,11 @@
 // 协同探测消息类型
 #define COR_MSG_TYPE_REAL_TIME_LOCATION_ENTITY          (uint32_t) 0x00000001
 #define COR_MSG_TYPE_REAL_TIME_LOCATION_TRACK           (uint32_t) 0x00000002
+
+// 显控消息类型
+#define XK_MSG_TYPE_CONTROL                             (uint32_t) 0x00000001
+#define XK_MSG_TYPE_ROUTE                               (uint32_t) 0x00000002
+
 
 typedef void (*fcDataTypeProcess_t)(uint32_t, QDataStream &);
 

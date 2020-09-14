@@ -155,7 +155,7 @@ void DataBase::processPathChange(WRJ_POSITIONSTATE_STRU *pInstance)
     }
     else
     {
-        p = (path_change_req_t *)malloc(sizeof(path_change_req_t));
+        p = (path_change_req_t *) malloc(sizeof(path_change_req_t));
         p->count = 0;
         _wrjPathReq.insert(id, p);
     }
@@ -570,4 +570,16 @@ void Recv_COR_TrackReport(uint32_t type, QDataStream &out)
         
         free(instance.pTargets);
     }
+}
+
+
+void Recv_XK_WRJ_Control(uint32_t type, QDataStream &out)
+{
+    
+}
+
+
+void Recv_XK_WRJ_Route(uint32_t type, QDataStream &out)
+{
+    
 }
