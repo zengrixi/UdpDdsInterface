@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+uint8_t g_xk_control = 0;
 
 #define processMsg(p, t)                                \
     do                                                  \
@@ -26,9 +27,7 @@ DataBase::~DataBase()
 }
 
 bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
-{
-    TestInfo(pEntity);
-    
+{  
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *>::iterator dbIterator;
 
     // 判断当实体死掉时，将其从库中删除
@@ -46,7 +45,11 @@ bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
     }
 
     // 判断平台id后对实体进行处理
-    // ...
+    for (int i = 0; i < ARRAY_SIZE(g_ZDJ_TargetPlatID); i++)
+    {
+        if (pEntity->platId == g_ZDJ_TargetPlatID[i])
+            TestInfo(pEntity);
+    }
 
     // 对实体进行存储
     // 如果库中有该实体则更新，否则新增
@@ -306,6 +309,31 @@ void DataBase::processRecvData(int nDataType, void *pData)
             
             break;
         }
+#if 0
+        case RECV_MSGTYPE_XK_WRJ_ROUTE :
+        {
+            uint32_t i;
+            LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1;
+            wrj_route_t *p2;
+
+            n = p2->count;
+            
+            LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
+            
+            for (i = 0; i < n; i++)
+            {
+                posDatas[i].lon_f = p2->pos[i].x;
+                posDatas[i].lat_f = p2->pos[i].y;
+                posDatas[i].alt_f = p2->pos[i].z;
+            }
+            
+            LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+            (&p1->PosList, posDatas, n);
+
+            processMsg(p1, NET_MSGTYPE_PATH_CHANGE_REQ);
+            break;
+        }
+#endif
 
         default:
             break;
@@ -405,6 +433,31 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
     dst = round(dst * 10000) / 10000;
 
     return dst;// 单位：公里
+}
+
+
+/*****************************************************************************
+ * 函 数 名  : Send_ASpaceX_WRJ_Route
+ * 负 责 人  : 曾日希
+ * 创建日期  : 2020年9月16日
+ * 函数功能  : 发送航路到无人机
+ * 输入参数  : vec3_t *pos  航路信息
+               int n        数量
+ * 输出参数  : 无
+ * 返 回 值  : void
+*****************************************************************************/
+void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n)
+{
+    int i;
+    WayPoint_Struct way[n];
+    
+    for (i = 0; i < n; i++)
+    {
+        way[i].Lon = pos[i].x;
+        way[i].Lat = pos[i].y;
+        way[i].Lon = pos[i].z;
+    }
+    WRJ_Module::instance().WRJ_send_TrackDataPacket(&way, n);
 }
 
 
@@ -575,11 +628,54 @@ void Recv_COR_TrackReport(uint32_t type, QDataStream &out)
 
 void Recv_XK_WRJ_Control(uint32_t type, QDataStream &out)
 {
-    
+    uint32_t id;
+    uint8_t control;
+
+    out >> id;
+    out >> control;
+
+    if ( 41 == id )
+    {
+        g_xk_control = control;
+    }
 }
 
 
 void Recv_XK_WRJ_Route(uint32_t type, QDataStream &out)
 {
+    uint8_t count;
+    wrj_route_t route;
+    vec3_t *pos;
     
+    if ( !g_xk_control )
+    {
+        return;
+    }
+
+    out >> route.id;
+    out >> count;
+    
+    route.count = count;
+    route.pos = Q_NULLPTR;
+    if ( count )
+    {
+        route.pos = (vec3_t *) malloc(sizeof(vec3_t) * count);
+    }
+
+    pos = route.pos;
+
+    while ( count-- )
+    {
+        out.readRawData((char *) &(pos->x), sizeof(pos->x));
+        out.readRawData((char *) &(pos->y), sizeof(pos->y));
+        out.readRawData((char *) &(pos->z), sizeof(pos->z));
+        pos++;
+    }
+
+    Send_ASpaceX_WRJ_Route(route.pos, route.count);
+    
+    if ( route.pos )
+    {
+        free(pos);
+    }
 }

@@ -3,8 +3,12 @@
 #include <QApplication>
 #include <QSettings>
 
+#include "wrj_module.h"
+#include "wrj_function_variable.h"
+
 OnWorker::OnWorker(QObject *parent) : QThread(parent)
 {
+    WRJ_Module::instance();
     SaveLog::instance().start();
     readConfig();
 }
@@ -18,15 +22,16 @@ OnWorker::~OnWorker()
 
 void OnWorker::run()
 {
-    WRJ_Module::instance().WRJ_send_CtrlAuthorityPacket(WRJ_Request_Ctrl);
-    
-    while ( 1 )
+    bool result;
+
+    result = WRJ_Module::instance().WRJ_get_CtrlAuthority();
+
+    while ( result )
     {
-        onStartWRJSend();
         onStartWRJRecv();
     }
 
-    WRJ_Module::instance().WRJ_send_CtrlAuthorityPacket(WRJ_Request_Release);
+    WRJ_Module::instance().WRJ_release_CtrlAuthority();
 }
 
 
@@ -42,6 +47,9 @@ void OnWorker::onStartUdp()
     _pCOR_Udp = new UdpHelper;
     _pCOR_Udp->Init(_COR_IP,_COR_PORT);
     _pCOR_Udp->start();
+
+    _pXK_Udp = new UdpHelper;
+    _pXK_Udp->Init("224.3.3.3", 9999, 2);
 }
 
 
@@ -62,6 +70,7 @@ void OnWorker::onStartWRJRecv()
 
 void OnWorker::onStartWRJSend()
 {
+#if 0
     int id;
     WayPoint_Struct way;
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
@@ -70,12 +79,13 @@ void OnWorker::onStartWRJSend()
     pEntityReport = DataBase::instance().getEntityReport(id);
     if ( pEntityReport )
     {
-        way.Lon = (int) (pEntityReport->geodeticLocationLon * pow(10, 2));
-        way.Lat = (int) (pEntityReport->geodeticLocationLon * pow(10, 2));
-        way.Lon = (int) (pEntityReport->geodeticLocationLon * 100);
+        way.Lon = pEntityReport->geodeticLocationLon;
+        way.Lat = pEntityReport->geodeticLocationLon;
+        way.Lon = pEntityReport->geodeticLocationLon;
 
-        WRJ_Module::WRJ_send_TrackDataPacket(&way, 1);
+        WRJ_Module::instance().WRJ_send_TrackDataPacket(&way, 1);
     }
+#endif
 }
 
 

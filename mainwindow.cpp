@@ -23,6 +23,7 @@ void MainWindow::on_startBtn_clicked()
         DdsHelper::instance().start();
     }
     OnWorker::instance().onStartUdp();
+    OnWorker::instance().start();
 }
 
 void MainWindow::on_stopBtn_clicked()

@@ -56,7 +56,7 @@ private:
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
     QMap<uint32_t, path_change_req_t *> _wrjPathReq;
-    QMap<uint32_t, path_change_req_t *> _wrjPathReq;
+    QMap<uint32_t, path_change_req_t *> _zdjPathReq;
     // 用于存接收到的消息类型
     QList<my_msg_t> _qListMyMsgs;
     QMutex _entityMutex;
@@ -69,6 +69,8 @@ private:
 extern float htonf(float hostfloat);
 inline double radian(double d);
 extern double getDistance(double lat1, double lng1, double lat2, double lng2);
+
+void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n);
 
 void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out);
 void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out);

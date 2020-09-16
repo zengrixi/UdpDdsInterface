@@ -65,6 +65,9 @@ static const int g_ZDJ_nPlatID[] =
     313, 314, 315, 316, 317, 38,
     39, 310, 312, 3, 34, 31, 35
 };
+
+extern uint8_t g_xk_control;
+
 /*----------------------------------------------*
  * 全局枚举定义                                       *
  *----------------------------------------------*/
@@ -142,20 +145,16 @@ typedef struct
 // WRJ控制权 非0为控制
 typedef struct
 {
-    package_head_t packageHead;
     uint32_t id;
     uint8_t control;
-    uint32_t packTail;
 }wrj_control_t;
 
 // 无人机位置信息
 typedef struct
 {
-    package_head_t packageHead;
     uint32_t id;
     uint8_t count;
     vec3_t *pos;
-    uint32_t packTail;
 }wrj_route_t;
 
 // ZDJ位置信息

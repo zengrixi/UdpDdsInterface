@@ -133,19 +133,21 @@ void UdpHelper::Init(QString addr, uint16_t port, int mode)
 
 void UdpHelper::broadcast()
 {
-//    foreach (QNetworkInterface interface, QNetworkInterface::allInterfaces())
-//    {
-//        if ( interface.flags() & QNetworkInterface::CanBroadcast )
-//        {
-//            foreach (QNetworkAddressEntry entry, interface.addressEntries())
-//            {
-//                if ( !entry.broadcast().isNull() )
-//                {
-//                    writeDatagram();
-//                }
-//            }
-//        }
-//    }
+#if 0
+    foreach (QNetworkInterface interface, QNetworkInterface::allInterfaces())
+    {
+        if ( interface.flags() & QNetworkInterface::CanBroadcast )
+        {
+            foreach (QNetworkAddressEntry entry, interface.addressEntries())
+            {
+                if ( !entry.broadcast().isNull() )
+                {
+                    writeDatagram();
+                }
+            }
+        }
+    }
+#endif
 }
 
 
@@ -450,7 +452,7 @@ void UdpHelper::parsePackage(QByteArray ba)
 
     QDataStream out(ba);
 
-    if ( 1 == result || 2 == result )
+    if ( 0 == result )
     {
         out.setFloatingPointPrecision(QDataStream::SinglePrecision);
         out.setByteOrder(QDataStream::LittleEndian);
@@ -458,7 +460,7 @@ void UdpHelper::parsePackage(QByteArray ba)
 
     // 解析包头
     result = parseHead(out, &packageHead);
-    if ( !result )
+    if ( -1 == result )
     {
         qDebug()<<"文件:"<<__FILE__<<"行:"  <<__LINE__<<"包头单位类型解析错误.";
         return;
@@ -509,7 +511,8 @@ int UdpHelper::parseTail(u_char *p)
 
     memcpy(&tail, p, sizeof(tail));
 
-    if ( tail == ZDJ_PACK_TAIL )
+    if ( tail == ZDJ_PACK_TAIL ||
+         tail == ENTITY_PACK_TAIL )
     {
         return 0;
     }

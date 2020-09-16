@@ -19,6 +19,7 @@
 #include <vector>
 #include <deque>
 #include <QMutex>
+#include <QTimer>
 #include <QThread>
 #include "wrj_function_variable.h"
 #include "singleton.h"
@@ -50,8 +51,11 @@ public:
 
     //**************************** 对外接口 **********************
     WRJ_POSITIONSTATE_STRU* WRJ_TakePosition();
-    void WRJ_send_TrackDataPacket(WayPoint_Struct *wayPoints,quint8 wayPointNum);
+    int WRJ_send_TrackDataPacket(WayPoint_Struct *wayPoints,quint8 wayPointNum);
+    int WRJ_send_TrackDataPacket(double (*wayPoints)[3],quint8 wayPointNum);
     void WRJ_send_CtrlAuthorityPacket(unsigned char);
+    bool WRJ_get_CtrlAuthority();
+    bool WRJ_release_CtrlAuthority();
 
 public slots:
     void WRJ_Recv_DifferentPacket();
@@ -75,8 +79,13 @@ protected:
     //     2、产生一个控制权限包；实际上是产生数据帧，然后调用第3个函数产生真正的包; 参数待做个枚举??按照协议 0 表示申请控制权，1 表示释放控制权
     //     3、前面两个函数可以共用的代码，用来封装最大的包
     QByteArray WRJ_Produce_TrackPackt(WayPoint_Struct *wayPoints,quint8 wayPointNum);
+    QByteArray WRJ_Produce_TrackPackt(double (*WayPoints)[3], quint8 WayPointNum);
+
     QByteArray WRJ_Produce_CtrlAuthorityPackt(unsigned char CtrlFlag);
     QByteArray WRJ_Produce_Packet(QByteArray &dataFrame,unsigned char dataFrameLen);
+
+    void WRJ_RequestGet_CtrlAuthority();
+    void WRJ_RequestRelease_CtrlAuthority();
 
 public:
     //*****************************  位置队列  *********************************************//
@@ -86,7 +95,7 @@ public:
     void WRJ_PositionQueue_Full_PartClear();     //队列满的时候，清除部分元素指向的内存
 
 signals:
-    //无人机模块信号，先作保留，因为其他模块需要申请或释放无人机控制时，space返回一个应答包，获取应答内容告知其它模块，当然也可以使用其他手段
+    //无人机模块信号，先作保留，因为其他模块需要申请或释放无人机控制时，space返回一个应答包
     void WRJ_Get_or_Release_ControlAuthority_Success();
     void WRJ_Get_or_Release_ControlAuthority_Failure();
 
@@ -95,6 +104,9 @@ private:
     bool WRJ_PitchPositionStruct_Int = false;       //待作保留
     bool WRJ_PitchPositionStruct_Double = false;    //待作保留
     bool WRJ_notHandleFollowContentFlag = false;     //不再处理后续内容
+
+    bool WRJ_Get_or_Release_ControlAuthority_Flag = false ; //实际获得或释放控制权的标志
+    bool WRJ_Get_Ctrl_Flag = false ;                        //对外部的获得或释放控制权的标志
 
     // UDP单播相关变量
     QUdpSocket *UnicastUdpSocket = Q_NULLPTR;
@@ -107,6 +119,11 @@ private:
     qint16 lastElementIndex = -1;   //最后一个元素下标，队列为空则为-1
     qint16 queueMaxIndex = 99;    //暂设队列最大容量为 queueMaxIndex + 1 = 100
     qint16 clearNum = 10;
+
+    QTimer timer_requestCtrl;
+    QTimer timer_requestRelease;
+
+
 };
 
 #endif // WRJ_MODULE_H

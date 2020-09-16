@@ -12,7 +12,7 @@
 #define WRJ_FUNCTION_VARIABLE_H
 #include <QMutex>
 //访问位置队列的锁
-extern QMutex mutex;
+extern QMutex mutex_queue;
 
 const static unsigned short CRC16Tab[256]= {
 0x0000,0x1021,0x2042,0x3063,0x4084,0x50A5,0x60C6,0x70E7,
@@ -111,9 +111,9 @@ typedef struct WRJ_POSITIONSTATE
 
 //该结构体用来接收来自内部的航迹点
 typedef struct WayPoint{
-    int Lat;
-    int Lon;
-    int Alt;
+    double Lat;
+    double Lon;
+    double Alt;
 }WayPoint_Struct;
 
 /************************************* 无人机（Space）模块 ---结束  *********************************/

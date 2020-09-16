@@ -72,6 +72,8 @@ SOURCES += \
     IDL/Target/targetPlugin.cxx \
     IDL/Target/targetSupport.cxx \
     testinfo.cxx \
+    wrj_function_variable.cpp \
+    wrj_module.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -97,6 +99,8 @@ HEADERS += \
     IDL/Target/targetPlugin.h \
     IDL/Target/targetSupport.h \
     testinfo.h \
+    wrj_function_variable.h \
+    wrj_module.h
 
 FORMS += \
         mainwindow.ui

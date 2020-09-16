@@ -1,6 +1,6 @@
 #include "wrj_module.h"
 
-QMutex mutex;
+QMutex mutex_queue;
 
 // 无人机编号（暂时只有一台）
 unsigned char DevId = 0x00;
@@ -36,7 +36,12 @@ unsigned char WRJ_Packet_SecondHead = 0x55;
 
 WRJ_Module::WRJ_Module()
 {
+   WRJ_Init();
+   connect(this,&WRJ_Module::WRJ_Get_or_Release_ControlAuthority_Success,this,&WRJ_Module::WRJ_Track_Init);
 
+   //定时申请控制权直到获得
+   connect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
+   timer_requestCtrl.start(200);
 }
 
 WRJ_Module::~WRJ_Module()
@@ -63,8 +68,6 @@ void WRJ_Module::WRJ_Init()
     WRJ_PositionQueue_Init();
 
     WRJ_UdpSocket_Init();
-
-    WRJ_Track_Init();
 }
 
 void WRJ_Module::WRJ_UdpSocket_Init()
@@ -73,7 +76,7 @@ void WRJ_Module::WRJ_UdpSocket_Init()
 
     //配置文件待写
     LocalPort = 9100;
-    DestinationIP.setAddress("192.168.1.134");
+    DestinationIP.setAddress("192.168.1.104");
     DestinationPort = 8000;
 
     if(!UnicastUdpSocket->bind(LocalPort)){
@@ -85,25 +88,23 @@ void WRJ_Module::WRJ_UdpSocket_Init()
 
 void WRJ_Module::WRJ_Track_Init()
 {
-    WRJ_send_CtrlAuthorityPacket(WRJ_Request_Ctrl);
-
-    //暂时不等待成功信号才发送航线
+    //等待成功信号才发送初始航线并断开与该函数的连接
+    disconnect(this,&WRJ_Module::WRJ_Get_or_Release_ControlAuthority_Success,this,&WRJ_Module::WRJ_Track_Init);
+    WRJ_Get_Ctrl_Flag = true ;
 
     WayPoint_Struct wayPoints[2];
 
-    //************************  测试数据 ***********************
-    wayPoints[0].Lat = 302234562;
-    wayPoints[0].Lon = 1223235420;
-    wayPoints[0].Alt = 3502;
-    wayPoints[1].Lat = 309234562;
-    wayPoints[1].Lon = 1228235420;
-    wayPoints[1].Alt = 6502;
+    //************************  初始航线数据 ***********************
+    wayPoints[0].Lat = 30.2234562;
+    wayPoints[0].Lon = 122.3235420;
+    wayPoints[0].Alt = 350.20;
+    wayPoints[1].Lat = 30.9234562;
+    wayPoints[1].Lon = 122.8235420;
+    wayPoints[1].Alt = 650.20;
 
     quint16 wayPointNum = 2;
 
     WRJ_send_TrackDataPacket(wayPoints,wayPointNum);
-
-    WRJ_send_CtrlAuthorityPacket(WRJ_Request_Release);
 }
 
 
@@ -125,10 +126,10 @@ void WRJ_Module::WRJ_Recv_DifferentPacket()
            continue ;
         }
 
-        mutex.lock();
+        mutex_queue.lock();
         WRJ_Analyze_DataFrame( &dataFrame );
         qDebug()<<"get Postions ";
-        mutex.unlock();
+        mutex_queue.unlock();
     }
 
 }
@@ -385,9 +386,11 @@ void WRJ_Module::WRJ_Include_ResponsePacket(QByteArray *dataFrame)
             if(0 == ResponseFlag){
                 qDebug()<<" WRJ Get_or_Release_ControlAuthority_Success";
                 emit WRJ_Get_or_Release_ControlAuthority_Success();
+                WRJ_Get_or_Release_ControlAuthority_Flag = true;
             }
             else{
                 emit WRJ_Get_or_Release_ControlAuthority_Failure();
+                WRJ_Get_or_Release_ControlAuthority_Flag = false;
             }
             continue;
         }
@@ -441,8 +444,8 @@ QByteArray WRJ_Module::WRJ_Produce_TrackPackt(WayPoint_Struct *wayPoints,quint8 
     QByteArray dataFrame;
 
     unsigned char DataID = DataID_Track;
-    WayPoint_Num = wayPointNum ;
-    DataLen_Track = 2 + WayPoint_Size * WayPoint_Num;
+//    WayPoint_Num = wayPointNum ;
+    DataLen_Track = 2 + WayPoint_Size * wayPointNum;
 
     unsigned char DataLength = DataLen_Track;
     unsigned char DevId_Temp = DevId;
@@ -454,19 +457,53 @@ QByteArray WRJ_Module::WRJ_Produce_TrackPackt(WayPoint_Struct *wayPoints,quint8 
     oneTrackStream << DataID;
     oneTrackStream << DataLength;
     oneTrackStream << DevId_Temp;
-    oneTrackStream << WayPoint_Num;
+    oneTrackStream << wayPointNum;
 
-    for(int i=0;i<WayPoint_Num;i++){
-        oneTrackStream << wayPoints[i].Lat ;
-        oneTrackStream << wayPoints[i].Lon ;
-        oneTrackStream << wayPoints[i].Alt ;
+    for(int i=0;i<wayPointNum;i++){
+        oneTrackStream << (int)(wayPoints[i].Lat * pow(10,7)) ;
+        oneTrackStream << (int)(wayPoints[i].Lon * pow(10,7)) ;
+        oneTrackStream << (int)(wayPoints[i].Alt * pow(10,2)) ;
     }
 
     dataFrame.append(oneTrack);
 
-    unsigned char dataFrameLen = (HeadLen_Track +  ( 2 + WayPoint_Size*WayPoint_Num) );
+    unsigned char dataFrameLen = (HeadLen_Track +  ( 2 + WayPoint_Size * wayPointNum) );
 
     return WRJ_Produce_Packet(dataFrame,dataFrameLen);
+}
+
+QByteArray WRJ_Module::WRJ_Produce_TrackPackt(double (*wayPoints)[3], quint8 wayPointNum)
+{
+    //WayPoints指向的每一个一维数组数据为：经度、纬度、高度；而按照协议先传纬度、经度、高度
+    QByteArray dataFrame;
+    unsigned char DataID = DataID_Track;
+    // WayPoint_Num = wayPointNum ;
+    DataLen_Track = 2 + WayPoint_Size * wayPointNum;
+
+    unsigned char DataLength = DataLen_Track;
+    unsigned char DevId_Temp = DevId;
+
+    QByteArray oneTrack(DataLength+2,0);
+    QDataStream oneTrackStream(&oneTrack,QIODevice::ReadWrite);
+    oneTrackStream.setByteOrder(QDataStream::LittleEndian);
+
+    oneTrackStream << DataID;
+    oneTrackStream << DataLength;
+    oneTrackStream << DevId_Temp;
+    oneTrackStream << wayPointNum;
+
+    for(int i=0;i<wayPointNum;i++){
+        oneTrackStream << (int)( *(*(wayPoints+i)+1) * pow(10,7) ) ; //纬度
+        oneTrackStream << (int)( *(*(wayPoints+i)+0) * pow(10,7) ) ; //经度
+        oneTrackStream << (int)( *(*(wayPoints+i)+2) * pow(10,2)) ; //高度
+    }
+
+    dataFrame.append(oneTrack);
+
+    unsigned char dataFrameLen = (HeadLen_Track +  ( 2 + WayPoint_Size*wayPointNum) );
+
+    return WRJ_Produce_Packet(dataFrame,dataFrameLen);
+
 }
 
 QByteArray WRJ_Module::WRJ_Produce_Packet(QByteArray &dataFrame,unsigned char dataFrameLen)
@@ -505,11 +542,26 @@ QByteArray WRJ_Module::WRJ_Produce_Packet(QByteArray &dataFrame,unsigned char da
     return packet;
 }
 
-void WRJ_Module::WRJ_send_TrackDataPacket(WayPoint_Struct *wayPoints,quint8 wayPointNum)
-{
+int WRJ_Module::WRJ_send_TrackDataPacket(WayPoint_Struct *wayPoints,quint8 wayPointNum)
+{ 
+   if(!WRJ_Get_Ctrl_Flag) return -1;
+
    QByteArray TrackDataPacket(WRJ_Produce_TrackPackt(wayPoints,wayPointNum));
    qint64 sendSize =  UnicastUdpSocket->writeDatagram(TrackDataPacket,DestinationIP,DestinationPort);
    qDebug()<<"send Track Data size is :"<<sendSize;
+
+   return sendSize;
+}
+
+int WRJ_Module::WRJ_send_TrackDataPacket(double (*wayPoints)[3], quint8 wayPointNum)
+{
+    if(!WRJ_Get_Ctrl_Flag) return -1;
+
+    QByteArray TrackDataPacket(WRJ_Produce_TrackPackt(wayPoints,wayPointNum));
+    qint64 sendSize =  UnicastUdpSocket->writeDatagram(TrackDataPacket,DestinationIP,DestinationPort);
+    qDebug()<<"send Track Data size is :"<<sendSize;
+
+    return sendSize;
 }
 
 void WRJ_Module::WRJ_send_CtrlAuthorityPacket(unsigned char flag )
@@ -518,6 +570,72 @@ void WRJ_Module::WRJ_send_CtrlAuthorityPacket(unsigned char flag )
     qint64 sendSize =  UnicastUdpSocket->writeDatagram(CtrlAuthorityPacket,DestinationIP,DestinationPort);
     qDebug()<<"send CtrlAuthority Data size is :"<<sendSize;
 }
+
+
+void WRJ_Module::WRJ_RequestGet_CtrlAuthority()
+{
+    if(WRJ_Get_or_Release_ControlAuthority_Flag){   //申请控制成功，标志置false，断开连接，并关闭定时器
+        WRJ_Get_or_Release_ControlAuthority_Flag = false;
+        timer_requestCtrl.stop();
+        disconnect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
+        return ;
+    }
+    WRJ_send_CtrlAuthorityPacket(WRJ_Request_Ctrl);
+}
+
+void WRJ_Module::WRJ_RequestRelease_CtrlAuthority()
+{
+    if(WRJ_Get_or_Release_ControlAuthority_Flag){   //申请释放成功，标志置false，断开连接，并关闭定时器
+        WRJ_Get_or_Release_ControlAuthority_Flag = false;
+        timer_requestCtrl.stop();
+        disconnect(&timer_requestRelease,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestRelease_CtrlAuthority);
+        return ;
+    }
+    WRJ_send_CtrlAuthorityPacket(WRJ_Request_Release);
+}
+
+
+
+
+bool WRJ_Module::WRJ_get_CtrlAuthority()
+{
+    //测试：1、初始化时已获得控制权，外部一直请求获取控制权，直接返回
+    //     2、外部释放了一次控制权，想要再次获得申请（此时为异步，外部想要立即发数据可能会失败）
+
+    if(WRJ_Get_Ctrl_Flag){
+        return true;
+    }
+
+    WRJ_Get_Ctrl_Flag = true;
+
+    if(!timer_requestCtrl.isActive()){
+        connect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
+        timer_requestCtrl.start(200);
+    }
+
+    return true ;
+}
+
+bool WRJ_Module::WRJ_release_CtrlAuthority()
+{
+    //测试：1、没有获得控制权，却释放，直接返回
+    //     2、拥有控制权，然后释放（异步处理）
+
+    if(!WRJ_Get_Ctrl_Flag){
+        return true;
+    }
+
+    WRJ_Get_Ctrl_Flag = false;
+
+    if(!timer_requestRelease.isActive()){
+        connect(&timer_requestRelease,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestRelease_CtrlAuthority);
+        timer_requestRelease.start(200);
+    }
+
+    return true;
+}
+
+
 
 
 //*****************************  位置队列存储  *********************************************//
@@ -577,12 +695,11 @@ WRJ_POSITIONSTATE_STRU* WRJ_Module::WRJ_TakePosition()
         return Q_NULLPTR;
     }
 
-    //考虑： 一次取多个位置 ?
-    mutex.lock();
+    mutex_queue.lock();
     WRJ_POSITIONSTATE_STRU *temp = savePosition_deque->at(0);
     savePosition_deque->pop_front();
     lastElementIndex--;
-    mutex.unlock();
+    mutex_queue.unlock();
 
     return temp;
 }
