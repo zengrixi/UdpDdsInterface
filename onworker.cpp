@@ -142,10 +142,75 @@ void OnWorker::readConfig()
         settings->endGroup();
         delete settings;
     }
+    leaderFighterID=0;
 
     QSettings settings(strIniFile, QSettings::IniFormat);
     settings.beginGroup("SystemSet");
     logType = settings.value("logType", "debug").toString();
+    settings.endGroup();
+
+    //从配置文件中读取各类传感器的探测范围
+    settings.beginGroup("SARDetectRange");
+    double SAR_Sea_Range=settings.value("SEA", "200").toDouble();
+    double SAR_Air_Range=settings.value("AIR", "100").toDouble();
+    QMap<int,double> tempRange;
+    tempRange.insert(0,SAR_Air_Range);
+    tempRange.insert(1,SAR_Air_Range);
+    tempRange.insert(2,SAR_Air_Range);
+    tempRange.insert(3,SAR_Air_Range);
+    tempRange.insert(4,SAR_Sea_Range);
+    tempRange.insert(5,SAR_Air_Range);
+    tempRange.insert(6,SAR_Air_Range);
+    detectRangeMap.insert(0,tempRange);
+    settings.endGroup();
+
+    settings.beginGroup("FighterDetectRange");
+    double fighter_UVA_Range=settings.value("UVA", "200").toDouble();
+    double fighter_Fighter_Range=settings.value("Fighter", "250").toDouble();
+    double fighter_AEW_Range=settings.value("AEW", "350").toDouble();
+    double fighter_Ship_Range=settings.value("Ship", "350").toDouble();
+    leaderFighterID=settings.value("leader","112").toInt();
+    tempRange.clear();
+    tempRange.insert(0,fighter_UVA_Range);
+    tempRange.insert(1,fighter_UVA_Range);
+    tempRange.insert(2,fighter_AEW_Range);
+    tempRange.insert(3,fighter_Fighter_Range);
+    tempRange.insert(4,fighter_Ship_Range);
+    tempRange.insert(5,fighter_Fighter_Range);
+    tempRange.insert(6,fighter_AEW_Range);
+    detectRangeMap.insert(3,tempRange);
+    settings.endGroup();
+
+    settings.beginGroup("RadarDetectRange");
+    double radar_UVA_Range=settings.value("UVA", "200").toDouble();
+    double radar_Fighter_Range=settings.value("Fighter", "250").toDouble();
+    double radar_AEW_Range=settings.value("AEW", "350").toDouble();
+    double radar_Ship_Range=settings.value("Ship", "350").toDouble();
+    tempRange.clear();
+    tempRange.insert(0,radar_UVA_Range);
+    tempRange.insert(1,radar_UVA_Range);
+    tempRange.insert(2,radar_AEW_Range);
+    tempRange.insert(3,radar_Fighter_Range);
+    tempRange.insert(4,radar_Ship_Range);
+    tempRange.insert(5,radar_Fighter_Range);
+    tempRange.insert(6,radar_AEW_Range);
+    detectRangeMap.insert(1,tempRange);
+    settings.endGroup();
+
+    settings.beginGroup("AEWDetectRange");
+    double AEW_UVA_Range=settings.value("UVA", "200").toDouble();
+    double AEW_Fighter_Range=settings.value("Fighter", "250").toDouble();
+    double AEW_AEW_Range=settings.value("AEW", "350").toDouble();
+    double AEW_Ship_Range=settings.value("Ship", "350").toDouble();
+    tempRange.clear();
+    tempRange.insert(0,AEW_UVA_Range);
+    tempRange.insert(1,AEW_UVA_Range);
+    tempRange.insert(2,AEW_AEW_Range);
+    tempRange.insert(3,AEW_Fighter_Range);
+    tempRange.insert(4,AEW_Ship_Range);
+    tempRange.insert(5,AEW_Fighter_Range);
+    tempRange.insert(6,AEW_AEW_Range);
+    detectRangeMap.insert(1,tempRange);
     settings.endGroup();
 
     settings.beginGroup("NetworkSet");
@@ -193,4 +258,129 @@ void OnWorker::readConfig()
         }
     }
     settings.endGroup();
+}
+
+QMap<unsigned long,ENTITYSTATE_REPORT> OnWorker::check(QStringList listToCheck)
+{
+    QString format_time="timeOfUpdate : (\\w*)";
+    QString format_lon="geodeticLocationLon : (-?([1-9]\\d*\\.\\d*|0\\.\\d*[1-9]\\d*|0?\\.0+|0))";
+    QString format_lat="geodeticLocationLat : (-?([1-9]\\d*\\.\\d*|0\\.\\d*[1-9]\\d*|0?\\.0+|0))";
+    QString format_alt="geodeticLocationAlt : (-?([1-9]\\d*\\.\\d*|0\\.\\d*[1-9]\\d*|0?\\.0+|0))";
+    QString format_vx="topographicVelocityX : (-?([1-9]\\d*\\.\\d*|0\\.\\d*[1-9]\\d*|0?\\.0+|0))";
+    QString format_vy="topographicVelocityY : (-?([1-9]\\d*\\.\\d*|0\\.\\d*[1-9]\\d*|0?\\.0+|0))";
+    QString format_vz="topographicVelocityZ : (-?([1-9]\\d*\\.\\d*|0\\.\\d*[1-9]\\d*|0?\\.0+|0))";
+    QString format_platid="platId : (\\w*)";
+    QRegExp timeInFile(format_time);
+    QRegExp lonInFile(format_lon);
+    QRegExp latInFile(format_lat);
+    QRegExp altInFile(format_alt);
+    QRegExp vxInFile(format_vx);
+    QRegExp vyInFile(format_vy);
+    QRegExp vzInFile(format_vz);
+    QRegExp platIDInFile(format_platid);
+    QStringList listOfnumber;
+    QString currentWord;//=listToCheck.join("\n");
+    QMap<unsigned long,ENTITYSTATE_REPORT> fileDataMap;
+    unsigned long index=0;
+    foreach(currentWord,listToCheck)
+    {
+        if (timeInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity;
+            entity.timeOfUpdate=timeInFile.cap(1).toLong();
+            fileDataMap.insert(index,entity);
+            index++;            // 上一个匹配的字符串的长度
+        }
+    }
+    index=0;
+    foreach(currentWord,listToCheck)
+    {
+        if (lonInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            QString xy=lonInFile.cap(1);
+            entity.geodeticLocationLon=lonInFile.cap(1).toDouble();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+
+    index=0;
+
+    foreach(currentWord,listToCheck)
+    {
+        if (latInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            entity.geodeticLocationLat=latInFile.cap(1).toDouble();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+
+    index=0;
+
+    foreach(currentWord,listToCheck)
+    {
+        if ( altInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            entity.geodeticLocationAlt=altInFile.cap(1).toDouble();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+
+    index=0;
+
+    foreach(currentWord,listToCheck)
+    {
+        if (vxInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            entity.topographicVelocityX=vxInFile.cap(1).toDouble();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+
+    index=0;
+
+    foreach(currentWord,listToCheck)
+    {
+        if (vyInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            entity.topographicVelocityY=vyInFile.cap(1).toDouble();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+
+    index=0;
+
+    foreach(currentWord,listToCheck)
+    {
+        if (vzInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            entity.topographicVelocityZ=vzInFile.cap(1).toDouble();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+
+    index=0;
+
+    foreach(currentWord,listToCheck)
+    {
+        if ( platIDInFile.indexIn(currentWord, 0) != -1)
+        {
+            ENTITYSTATE_REPORT entity=fileDataMap[index];
+            entity.platId=platIDInFile.cap(1).toUShort();
+            fileDataMap[index]=entity;
+            index++;
+        }
+    }
+    return fileDataMap;
 }

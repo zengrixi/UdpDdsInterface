@@ -49,6 +49,14 @@ private slots:
 private:
     Ui::MainWindow *ui;
     TCPSocket *_tcpSARPos, *_tcpSARTrack;
+
+    QMap<unsigned short,double> enemySpeed;//运动速度，key：platId
+    QMap<unsigned short,int> entityType;//实体类型，key：platId
+    QMap<unsigned short,unsigned long> entityTrackNumber;//目标航迹号，key：platId
+    QMap<unsigned long,ENTITYSTATE_REPORT> entities;//原始数据信息，key：时间
+    QMap<unsigned short,ENTITYSTATE_REPORT> nowEntity;//实体当前状态，key：platId
+    void sendTrack(int m_type,unsigned short platId);
+    int getEntityType(unsigned short platId);
 };
 
 #endif // MAINWINDOW_H

@@ -462,7 +462,7 @@ QByteArray WRJ_Module::WRJ_Produce_TrackPackt(WayPoint_Struct *wayPoints,quint8 
     for(int i=0;i<wayPointNum;i++){
         oneTrackStream << (int)(wayPoints[i].Lat * pow(10,7)) ;
         oneTrackStream << (int)(wayPoints[i].Lon * pow(10,7)) ;
-        oneTrackStream << (int)(wayPoints[i].Alt * pow(10,2)) ;
+        oneTrackStream << (int)(wayPoints[i].Alt * pow(10,1)) ;
     }
 
     dataFrame.append(oneTrack);
@@ -495,7 +495,7 @@ QByteArray WRJ_Module::WRJ_Produce_TrackPackt(double (*wayPoints)[3], quint8 way
     for(int i=0;i<wayPointNum;i++){
         oneTrackStream << (int)( *(*(wayPoints+i)+1) * pow(10,7) ) ; //纬度
         oneTrackStream << (int)( *(*(wayPoints+i)+0) * pow(10,7) ) ; //经度
-        oneTrackStream << (int)( *(*(wayPoints+i)+2) * pow(10,2)) ; //高度
+        oneTrackStream << (int)( *(*(wayPoints+i)+2) * pow(10,1)) ; //高度
     }
 
     dataFrame.append(oneTrack);

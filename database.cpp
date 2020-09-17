@@ -457,7 +457,7 @@ void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n)
         way[i].Lat = pos[i].y;
         way[i].Lon = pos[i].z;
     }
-    WRJ_Module::instance().WRJ_send_TrackDataPacket(&way, n);
+    WRJ_Module::instance().WRJ_send_TrackDataPacket(way, n);
 }
 
 
@@ -676,6 +676,6 @@ void Recv_XK_WRJ_Route(uint32_t type, QDataStream &out)
     
     if ( route.pos )
     {
-        free(pos);
+        free(route.pos);
     }
 }

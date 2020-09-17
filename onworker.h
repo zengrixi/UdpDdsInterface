@@ -25,6 +25,7 @@ public:
     explicit OnWorker(QObject *parent = nullptr);
     ~OnWorker();
 
+    QMap<unsigned long,ENTITYSTATE_REPORT> check(QStringList);
 private:
     UdpHelper *_pWRJ_Udp;
     UdpHelper *_pZDJ_Udp;
