@@ -68,7 +68,12 @@ private:
  *----------------------------------------------*/
 extern float htonf(float hostfloat);
 inline double radian(double d);
+inline double angle(double d);
 extern double getDistance(double lat1, double lng1, double lat2, double lng2);
+vec2_t radian2Angle(vec2_t lonlat);
+vec2_t angle2Radian(vec2_t lonlat);
+vec2_t lonLat2Morcator(vec2_t lonlat);
+vec2_t mercator2LonLat(vec2_t mercator);
 
 void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n);
 

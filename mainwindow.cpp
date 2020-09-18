@@ -190,7 +190,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
             if(!is_find)continue;
         }
         //可探测，发送航迹
-        SDI_TRACK_REPORT trackReport;
+        LHZS::SDI_TRACK_REPORT trackReport;
         trackReport.platform_id_ul=entity.platId;
         if(entityTrackNumber.contains(platId))
             trackReport.sdi_track_number_ul=entityTrackNumber[platId];
@@ -298,6 +298,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
         trackReport.target_attribute_data=tad;//探测
         memset(trackReport.spare_c,0,24);
         //dds发布航迹信息------zeng
+        DataBase::instance().processRecvData(DDS_MSGTYPE_RADAR_TRACK_REPORT, &trackReport);
     }
 }
 

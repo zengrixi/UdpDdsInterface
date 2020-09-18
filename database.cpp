@@ -358,7 +358,7 @@ my_msg_t DataBase::getMyMsg()
 
 LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *DataBase::getEntityReport(int id)
 {
-    QMap <int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *>::iterator dbIterator;
+    QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *>::iterator dbIterator;
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityCopy = Q_NULLPTR;
     _entityMutex.lock();
     dbIterator = _dbEntity.find(id);
@@ -405,7 +405,12 @@ float htonf(float hostfloat)
 double radian(double d)
 {
     // 角度1˚ = π / 180
-    return d * PI / 180.0;
+    return d / 180 * PI;
+}
+
+double angle(double d)
+{
+    return d * 180 / PI;
 }
 
 /*****************************************************************************
@@ -436,6 +441,51 @@ double getDistance(double lat1, double lng1, double lat2, double lng2)
 }
 
 
+vec2_t radian2Angle(vec2_t lonlat)
+{
+    vec2_t v;
+
+    v.x = angle(lonlat.x);
+    v.y = angle(lonlat.y);
+
+    return v;
+}
+
+
+vec2_t angle2Radian(vec2_t lonlat)
+{
+    vec2_t v;
+
+    v.x = radian(lonlat.x);
+    v.y = radian(lonlat.y);
+
+    return v;
+}
+
+
+vec2_t lonLat2Morcator(vec2_t lonlat)
+{
+    vec2_t mercator;
+
+    mercator.x = lonlat.x * 20037508.342789 / 180;
+    mercator.y = log(tan((90 + lonlat.y) * PI / 360)) / (PI / 180);
+    mercator.y = (double) (mercator.y * 20037508.342789 / 180);
+
+    return mercator;
+}
+
+
+vec2_t mercator2LonLat(vec2_t mercator)
+{
+    vec2_t lonlat;
+
+    lonlat.x =   (mercator.x / 20037508.342789 * 180);
+	lonlat.y =  (mercator.y / 20037508.342789 * 180);
+	lonlat.y = (double) (180 / PI * (2 * atan(exp(lonlat.y * PI / 180)) - PI / 2));
+
+    return lonlat;
+}
+
 /*****************************************************************************
  * 函 数 名  : Send_ASpaceX_WRJ_Route
  * 负 责 人  : 曾日希
@@ -450,11 +500,14 @@ void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n)
 {
     int i;
     WayPoint_Struct way[n];
+    vec2_t v;
     
     for (i = 0; i < n; i++)
     {
-        way[i].Lon = pos[i].x;
-        way[i].Lat = pos[i].y;
+        v = radian2Angle(pos[i].xy);
+        
+        way[i].Lon = v.x;
+        way[i].Lat = v.y;
         way[i].Lon = pos[i].z;
     }
     WRJ_Module::instance().WRJ_send_TrackDataPacket(way, n);

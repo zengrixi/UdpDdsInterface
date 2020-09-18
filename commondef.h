@@ -226,10 +226,10 @@ enum TESTTYPE
 #pragma pack(1)
 
 // 位置2d
-typedef struct
+typedef union
 {
-    double x;
-    double y;
+    struct { double x, y; };
+    double v[2];
 }vec2_t;
 
 typedef union
