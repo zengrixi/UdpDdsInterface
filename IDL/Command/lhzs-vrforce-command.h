@@ -2,14 +2,14 @@
 /*
   WARNING: THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
 
-  This file was generated from lhzs-vrforce-command..idl using "rtiddsgen".
+  This file was generated from lhzs-vrforce-command.idl using "rtiddsgen".
   The rtiddsgen tool is part of the RTI Connext distribution.
   For more information, type 'rtiddsgen -help' at a command shell
   or consult the RTI Connext manual.
 */
 
-#ifndef lhzs_vrforce_command__2046466877_h
-#define lhzs_vrforce_command__2046466877_h
+#ifndef lhzs_vrforce_command_1319407593_h
+#define lhzs_vrforce_command_1319407593_h
 
 #ifndef NDDS_STANDALONE_TYPE
     #ifdef __cplusplus
@@ -1906,4 +1906,4 @@ RTIBool CHANGE_SENSORS_REQ_copy(
 } /* namespace LHZS */
 
 
-#endif /* lhzs_vrforce_command__2046466877_h */
+#endif /* lhzs_vrforce_command_1319407593_h */

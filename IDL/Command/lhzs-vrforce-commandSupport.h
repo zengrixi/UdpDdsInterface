@@ -2,17 +2,17 @@
 /*
   WARNING: THIS FILE IS AUTO-GENERATED. DO NOT MODIFY.
 
-  This file was generated from lhzs-vrforce-command..idl using "rtiddsgen".
+  This file was generated from lhzs-vrforce-command.idl using "rtiddsgen".
   The rtiddsgen tool is part of the RTI Connext distribution.
   For more information, type 'rtiddsgen -help' at a command shell
   or consult the RTI Connext manual.
 */
 
-#ifndef lhzs_vrforce_command_Support_2046466877_h
-#define lhzs_vrforce_command_Support_2046466877_h
+#ifndef lhzs_vrforce_commandSupport_1319407593_h
+#define lhzs_vrforce_commandSupport_1319407593_h
 
 /* Uses */
-#include "lhzs-vrforce-command..h"
+#include "lhzs-vrforce-command.h"
 
 
 
@@ -750,4 +750,4 @@ DDS_DATAREADER_C(CHANGE_SENSORS_REQDataReader, CHANGE_SENSORS_REQSeq, CHANGE_SEN
 } /* namespace LHZS */
 
 
-#endif  /* lhzs_vrforce_command_Support_2046466877_h */
+#endif  /* lhzs_vrforce_commandSupport_1319407593_h */
