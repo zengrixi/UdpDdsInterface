@@ -7,6 +7,7 @@
 #include "database.h"
 #include "tcpsocket.h"
 #include "onworker.h"
+#include "ui_mainwindow.h"
 
 namespace Ui
 {

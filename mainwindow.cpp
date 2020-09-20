@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
+
 #include "ddshelper.h"
 #include <QDebug>
 #include <QMessageBox>
@@ -295,7 +295,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
         trackReport.maneuver_indicator_e=0;//探测
         QTime tt=QDateTime::currentDateTime().time();
         trackReport.time_of_update_ul=(tt.hour()*3600+tt.minute()*60+tt.second())*1000+tt.msec();//按照情报方定义的当天经过的毫秒数
-        trackReport.target_attribute_data=tad;//探测
+//        trackReport.target_attribute_data=tad;//探测
         memset(trackReport.spare_c,0,24);
         //dds发布航迹信息------zeng
         DataBase::instance().processRecvData(DDS_MSGTYPE_RADAR_TRACK_REPORT, &trackReport);
