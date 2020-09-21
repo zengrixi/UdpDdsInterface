@@ -11,6 +11,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = DdsInterface
 TEMPLATE = app
 
+CONFIG += c++11
+
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -27,7 +29,7 @@ DEFINES += Linux \
     RTI_UNIX
 
 # RTIDDS路径
-MDS_PATH = /home/ywxt-15/win7/app/MDS
+MDS_PATH = /home/zeng/MDS
 
 CONFIG(debug, release|debug) {
   SUFFIX = d
