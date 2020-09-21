@@ -93,6 +93,7 @@ void UdpHelper::stop()
 *****************************************************************************/
 void UdpHelper::Init(QString addr, uint16_t port, int mode)
 {
+    g_zdj_init=true;
     _hostAddr.setAddress(addr);
     _nPort = port;
     _pUdpSocket = new QUdpSocket(this);
@@ -104,7 +105,6 @@ void UdpHelper::Init(QString addr, uint16_t port, int mode)
         return;
     }
     _bInit = true;
-    
     // 通讯模式选择
     switch ( mode )
     {
@@ -128,6 +128,8 @@ void UdpHelper::Init(QString addr, uint16_t port, int mode)
 
     // 接收数据绑定
     connect(_pUdpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+    
+    sendFlightControlState(false);//初始状态控制权在导调 shi修改待确认
 }
 
 
@@ -233,9 +235,20 @@ void UdpHelper::sendMsg2ZDJ()
     
     if ( g_zdj_init )
     {
-        if ( sendFlightPositionState() == 0 )
+//        if ( sendFlightPositionState() == 0 )
+//        {
+//            g_zdj_init = false;
+//        }
+        sendFlightPositionState();
+
+        //8分钟后控制权交给战斗机
+        DDS_Long currentTime=DataBase::instance().getCurrentTime();
+        DDS_Long startTime=DataBase::instance().getStartTime();
+        if((currentTime-startTime)>=8*60*1000)
         {
-            g_zdj_init = false;
+            g_zdj_init=false;
+            //发送控制权申请  shi修改待确认
+            sendFlightControlState(true);
         }
     }
 
@@ -376,6 +389,45 @@ int UdpHelper::sendFlightPositionState()
 
     _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
 
+    // 将提取出来的预警机信息添加到包体中
+    count = ARRAY_SIZE(g_Enemy_AEW_nPlatID);
+
+    in << ZDJ_PACK_HEAD
+       << (uint32_t) 0xAA
+       << size
+       << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
+       << count;
+
+    // 将提取出来的战斗机信息添加到包体中
+    for (i = 0; i < count; i++)
+    {
+        id = g_Enemy_AEW_nPlatID[i];
+
+        pEntityReport = DataBase::instance().getEntityReport(id);
+
+        if ( !pEntityReport )
+        {
+            count--;
+            continue;
+        }
+
+        in << (uint32_t) pEntityReport->platId
+           << pEntityReport->geodeticLocationLat
+           << pEntityReport->geodeticLocationLon
+           << pEntityReport->topographicVelocityX
+           << pEntityReport->topographicVelocityY; // 噪声强度
+    }
+
+    if ( !count )
+    {
+        return -1;
+    }
+
+    // 添加包尾信息
+    in << ZDJ_PACK_TAIL;
+
+    _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
+
     return 0;
 }
 
@@ -391,7 +443,6 @@ int UdpHelper::sendFlightPositionState()
 int UdpHelper::sendFlightControlState(bool is_controlled)
 {
     uint32_t size;
-    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
     QByteArray ba;
     QDataStream in(&ba, QIODevice::WriteOnly);// 往QByteArray中流入数据
 
@@ -604,7 +655,7 @@ int UdpHelper::sendEntityPositionState()
     in.setByteOrder(QDataStream::LittleEndian);
 #endif
 
-    count = ARRAY_SIZE(g_Entity_nPlatID);
+    count = ARRAY_SIZE(g_Enemy_Fighter_nPlatID);
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
@@ -623,9 +674,24 @@ int UdpHelper::sendEntityPositionState()
     // 将提取出来的战斗机信息添加到包体中
     for (i = 0; i < count; i++)
     {
-        id = g_Entity_nPlatID[i];
-
+        id = g_Enemy_Fighter_nPlatID[i];
         pEntityReport = DataBase::instance().getEntityReport(id);
+        //地方战斗机位置判断
+//        bool is_find=false;
+//        foreach(unsigned short fighterID,g_Fight_nPlatID)
+//        {
+//            fighterState = DataBase::instance().getEntityReport(fighterID);
+//            QMap<int,double> rangeMap=detectRangeMap[3];
+//            double range=rangeMap[3];
+//            double dis=getDistance(pEntityReport.geodeticLocationLat,pEntityReport.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
+//            if(dis<=range)
+//            {
+//                is_find=true;
+//                break;
+//            }
+//        }
+//        if(!is_find)continue;
+
 
         if ( !pEntityReport )
         {
@@ -634,13 +700,13 @@ int UdpHelper::sendEntityPositionState()
         }
 
         in << (uint32_t) pEntityReport->platId;
-        if(g_Enemy_Ship_nPlatID.contains(pEntityReport->platId))//空海标识
-            in<<(uint32_t)1;
-        else
+//        if(g_Enemy_Ship_nPlatID.contains(pEntityReport->platId))//空海标识
+//            in<<(uint32_t)1;
+//        else
             in<<(uint16_t)0;
-        if(g_Enemy_Ship_nPlatID.contains(pEntityReport->platId)||g_Enemy_Fighter_nPlatID.contains(pEntityReport->platId))//敌我标识
-            in<<(uint32_t)0;
-        else
+//        if(g_Enemy_Ship_nPlatID.contains(pEntityReport->platId)||g_Enemy_Fighter_nPlatID.contains(pEntityReport->platId))//敌我标识
+//            in<<(uint32_t)0;
+//        else
             in<<(uint16_t)1;
         in << pEntityReport->geodeticLocationLat
            << pEntityReport->geodeticLocationLon

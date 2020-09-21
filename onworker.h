@@ -25,15 +25,13 @@ public:
     explicit OnWorker(QObject *parent = nullptr);
     ~OnWorker();
 
-    QMap<unsigned long,ENTITYSTATE_REPORT> check(QStringList);
+    QMap<unsigned long,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT> check(QStringList);
 private:
     UdpHelper *_pWRJ_Udp;
     UdpHelper *_pZDJ_Udp;
     UdpHelper *_pCOR_Udp;
     UdpHelper *_pXK_Udp;
 
-    QString _ZDJ_IP,_WRJ_IP,_COR_IP;
-    uint16_t _ZDJ_PORT,_WRJ_PORT,_COR_PORT;
     void readConfig();
 protected:
     virtual void run() Q_DECL_OVERRIDE;

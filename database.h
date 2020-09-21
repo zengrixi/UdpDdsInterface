@@ -48,7 +48,9 @@ public:
     void processRecvData(int nDataType, void *pData);
     my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
-    
+    DDS_Long getStartTime(){return startTime;}
+    DDS_Long getCurrentTime(){return currentTime;}
+    void setStartTime(DDS_Long timeNow){startTime=timeNow;currentTime=timeNow;}
 private:
     DataBase();
     ~DataBase();
@@ -61,6 +63,8 @@ private:
     QList<my_msg_t> _qListMyMsgs;
     QMutex _entityMutex;
     QMutex _msgMutex;
+    DDS_Long startTime;
+    DDS_Long currentTime;
 };
 
 /*----------------------------------------------*

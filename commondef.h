@@ -43,16 +43,22 @@ typedef unsigned char           u_char;                   // 类型兼容
 #define PI                              3.141592653
 #define EARTH_RADIUS                    6378.137        // 地球近似半径
 
-static QList<int> g_Entity_nPlatID;//所有实体ID
-static QList<int> g_SAR_nPlatID;// SAR无人机PlatID
-static QList<int> g_UVA_nPlatID;// 雷达无人机PlatID
-static QList<int> g_AEW_nPlatID;// 预警机PlatID(敌我）
-static QList<int> g_Enemy_Ship_nPlatID;// 海上目标PlatID（敌方船只）
-static QList<int> g_Enemy_Fighter_nPlatID;// 战斗机目标PlatID（敌方？）
-static QList<int> g_Fight_nPlatID;// 我方战斗机平台ID
+static QList<unsigned short> g_Entity_nPlatID;//所有实体ID
+static QList<unsigned short> g_SAR_nPlatID;// SAR无人机PlatID
+static QList<unsigned short> g_UVA_nPlatID;// 雷达无人机PlatID
+static QList<unsigned short> g_AEW_nPlatID;// 预警机PlatID(敌我）
+static QList<unsigned short> g_Enemy_Ship_nPlatID;// 海上目标PlatID（敌方船只）
+static QList<unsigned short> g_Enemy_Fighter_nPlatID;// 战斗机目标PlatID（敌方？）
+static QList<unsigned short> g_Enemy_AEW_nPlatID;// 战斗机目标PlatID（敌方？）
+static QList<unsigned short> g_Fight_nPlatID;// 我方战斗机平台ID
 
-static QMap<int,QMap<int,double> > detectRangeMap;//探测距离
+static QMap<int,QMap<int,double> > detectRangeMap;//探测距离key为机型
 static unsigned short leaderFighterID;    //战斗机长机ID
+static unsigned short WRJStationCtrlID;    //地面站控制无人机ID
+
+
+static QString _ZDJ_IP,_WRJ_IP,_COR_IP,_PXK_IP;
+static uint16_t _ZDJ_PORT,_WRJ_PORT,_COR_PORT,_PXK_PORT;
 // 战斗机目标PlatID（敌方？）
 static const int g_ZDJ_TargetPlatID[] =
 {
@@ -71,109 +77,6 @@ static const int g_ZDJ_nPlatID[] =
 
 extern uint8_t g_xk_control;// xk获取无人机控制权
 
-
-/*-------------发送航迹用，接入mds后删除---------------*/
-//日期类
-struct DATE_OF_DATA
-{
-    unsigned short year_uh;
-    unsigned short month_uh;
-    unsigned short day_uh;
-};
-
-struct TARGET_ATTRIBUTE_DATA
-{
-    unsigned short                  conflict_flag_uh[4];            //@key
-    unsigned short                  target_type_e;                  //空海类型
-    unsigned short                  JEM_type_e;                     //微动特性
-    unsigned short                  identification_e;               //敌我属性
-    double                          ident_confidence_f;             //敌我属性置信度
-    unsigned short                  civil_military_e;               //军民属性
-    double                          civil_military_conf_f;          //军民属性置信度
-    unsigned short                  target_class_e;                 //目标类型
-    double                          class_confidence_f;             //目标类型置信度
-    unsigned short                  target_model_e;                 //目标型号 0未定义 eg.F16
-    double                          model_confidence_f;             //目标型号置信度
-    unsigned short                  target_nation_e;                //目标国籍 0未定义 eg.中国
-    double                          nation_confidence_f;            //目标国籍置信度
-    unsigned short                  target_rcs_e;                   //目标rcs 0未定义 eg.大中小
-    double                          rcs_confidence_f;               //目标rcs置信度
-};
-
-//实体类接口
-struct ENTITYSTATE_REPORT
-{
-    unsigned short entityID;
-    char entityName[32];
-    unsigned short entityIFFCode;
-    unsigned short entityClass;
-    unsigned short entityModel;
-    char entityType[32];
-    DATE_OF_DATA dateOfUpdate;
-    long timeOfUpdate;
-    long damageState;
-    double oil;
-    double geodeticLocationLon;
-    double geodeticLocationLat;
-    double geodeticLocationAlt;
-    double topographicVelocityX;
-    double topographicVelocityY;
-    double topographicVelocityZ;
-    double topographicAccelerationX;
-    double topographicAccelerationY;
-    double topographicAccelerationZ;
-    double topographicPsi;
-    double topographicTheta;
-    double topographicPhi;
-    double rotationalVelocityX;
-    double rotationalVelocityY;
-    double rotationalVelocityZ;
-    unsigned short sizeOfGroup;//编队内个数
-    unsigned short platId;//平台标识号
-};
-struct GEOGRAPHIC_POSITION                          //地理坐标
-{
-    double              lon_f;                      //@key //弧度 范围-pi~0  西经， 0-pi 东经
-    double              lat_f;                      //弧度 范围-pi/2~0南纬， 0-pi/2北纬
-    double              alt_f;                      //单位：m
-};
-
-struct PLATFORM_VELOCITY                            //平台速度(以平台为中心)
-{
-    double              platform_vx_f;              //@key  // m/s
-    double              platform_vy_f;              // m/s
-    double              platform_vz_f;              // m/s
-};
-
-struct SDI_TRACK_REPORT
- {
-     unsigned long                   platform_id_ul;                  //@key *//预警机平台1X 无人机(ISAR)2X 无人机(雷达)3X 战斗机4X
-     unsigned long                   sdi_track_number_ul;             //*航迹号 4位
-     unsigned short                  radar_track_number_uh;           //radar航迹号
-     unsigned short                  ssr_track_number_uh;             //SSR航迹号
-     unsigned short                  esm_target_number_uh;            //ESM航迹号
-     unsigned short                  csm_target_number_uh;            //CSM航迹号
-     unsigned short                  ir_target_number_uh;             //IR航迹号
-     unsigned long                   icao_addr_ul;                    //ADS-B icao地址
-     unsigned long                   ais_mmsi_ul;                     //AIS用户标识码
-     char                            call_sign_c[16];                 //AIS呼号
-     unsigned short                  net_obj_addr_uh;
-     unsigned short                  track_status_e;                  //航迹状态，0未定义 1起始 2更新
-     unsigned short                  track_quality_uh;                //航迹质量1~15
-     unsigned short                  track_source_e;                  //基础航迹源
-     GEOGRAPHIC_POSITION             target_geo_position;             //*目标位置
-     PLATFORM_VELOCITY               target_velocity;                 //*目标速度
-     double                          speed_f;                         //*目标速度标量
-     double                          heading_f;                       //*航向0~360，相对正北
-     unsigned short                  mission_type_e;                  //任务类型 eg.拦截，攻击
-     unsigned short                  threat_level_e;                  //威胁等级，
-     unsigned short                  formation_size_uh;               //编队中飞机数目
-     unsigned short                  maneuver_indicator_e;            //机动标识，0未定义 1机动 2非机动
-     unsigned long                   time_of_update_ul;               //*时间（当天0点起总的毫秒时）
-     TARGET_ATTRIBUTE_DATA           target_attribute_data;           //目标属性信息
-     char                            spare_c[24];
- };
-/*-------------发送航迹用，接入mds后删除---------------*/
 
 /*----------------------------------------------*
  * 全局枚举定义                                       *
@@ -241,6 +144,8 @@ typedef union
 }vec3_t;
 #define VEC3(x, y, z) { { x, y, z } }
 
+static quint16 wrj_wayPointNum;
+static QList<vec3_t> wrj_wayIniPoint;
 // 数据包头
 typedef struct
 {

@@ -18,7 +18,8 @@ uint8_t g_xk_control = 0;
 
 DataBase::DataBase()
 {
-    
+    startTime=0;
+    currentTime=0;
 }
 
 DataBase::~DataBase()
@@ -62,6 +63,8 @@ bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
         _dbEntity.erase(dbIterator);
     }
     makeCopy(&pEntityCopy, pEntity, true);
+    if(startTime==0)startTime=pEntityCopy->timeOfUpdate;
+    currentTime=pEntityCopy->timeOfUpdate;
     _dbEntity.insert(pEntity->platId, pEntityCopy);
     _entityMutex.unlock();
     return true;
@@ -687,10 +690,16 @@ void Recv_XK_WRJ_Control(uint32_t type, QDataStream &out)
     out >> id;
     out >> control;
 
-    if ( 41 == id )
+    if ( WRJStationCtrlID == id )///shi修改 待确认
     {
         g_xk_control = control;
     }
+
+    //向地面站发送控制权夺取或者释放命令？？？
+    if(!g_xk_control)
+        WRJ_Module::instance().WRJ_release_CtrlAuthority();
+    else
+        WRJ_Module::instance().WRJ_get_CtrlAuthority();
 }
 
 

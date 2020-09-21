@@ -87,6 +87,7 @@ protected:
     void WRJ_RequestGet_CtrlAuthority();
     void WRJ_RequestRelease_CtrlAuthority();
 
+    int WRJ_CtrlAuthorityTime;
 public:
     //*****************************  位置队列  *********************************************//
     void WRJ_PositionQueue_Init();   //队列初始化

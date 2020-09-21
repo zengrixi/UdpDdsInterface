@@ -1,4 +1,5 @@
 #include "wrj_module.h"
+#include "ddshelper.h"
 
 QMutex mutex_queue;
 
@@ -37,6 +38,7 @@ unsigned char WRJ_Packet_SecondHead = 0x55;
 WRJ_Module::WRJ_Module()
 {
    WRJ_Init();
+   WRJ_CtrlAuthorityTime=0;
    connect(this,&WRJ_Module::WRJ_Get_or_Release_ControlAuthority_Success,this,&WRJ_Module::WRJ_Track_Init);
 
    //定时申请控制权直到获得
@@ -66,8 +68,11 @@ void WRJ_Module::WRJ_Init()
     qDebug()<<"-------------------- WRJ_Module thread is: "<<QThread::currentThreadId();
 
     WRJ_PositionQueue_Init();
+    sleep(1);
 
     WRJ_UdpSocket_Init();
+    sleep(1);
+    //qDebug()<<"right 2";
 }
 
 void WRJ_Module::WRJ_UdpSocket_Init()
@@ -76,8 +81,8 @@ void WRJ_Module::WRJ_UdpSocket_Init()
 
     //配置文件待写
     LocalPort = 9100;
-    DestinationIP.setAddress("192.168.1.104");
-    DestinationPort = 8000;
+    DestinationIP.setAddress(_WRJ_IP);
+    DestinationPort = _WRJ_PORT;
 
     if(!UnicastUdpSocket->bind(LocalPort)){
         qDebug()<<"fail to bind the port: "<<LocalPort;
@@ -90,21 +95,20 @@ void WRJ_Module::WRJ_Track_Init()
 {
     //等待成功信号才发送初始航线并断开与该函数的连接
     disconnect(this,&WRJ_Module::WRJ_Get_or_Release_ControlAuthority_Success,this,&WRJ_Module::WRJ_Track_Init);
-    WRJ_Get_Ctrl_Flag = true ;
 
-    WayPoint_Struct wayPoints[2];
+    WayPoint_Struct *wayPoints=new WayPoint_Struct[wrj_wayPointNum];
 
     //************************  初始航线数据 ***********************
-    wayPoints[0].Lat = 30.2234562;
-    wayPoints[0].Lon = 122.3235420;
-    wayPoints[0].Alt = 350.20;
-    wayPoints[1].Lat = 30.9234562;
-    wayPoints[1].Lon = 122.8235420;
-    wayPoints[1].Alt = 650.20;
-
-    quint16 wayPointNum = 2;
-
-    WRJ_send_TrackDataPacket(wayPoints,wayPointNum);
+    for(int i=0;i<wrj_wayPointNum;i++)
+    {
+        wayPoints[i].Lon = angle(wrj_wayIniPoint[i].x);
+        wayPoints[i].Lat = angle(wrj_wayIniPoint[i].y);
+        wayPoints[i].Alt = wrj_wayIniPoint[i].z;
+    }
+    WRJ_send_TrackDataPacket(wayPoints,wrj_wayPointNum);
+    delete[] wayPoints;
+    ///释放控制权限????shi待确认
+    WRJ_release_CtrlAuthority();
 }
 
 
@@ -267,7 +271,7 @@ void WRJ_Module::WRJ_Only_PositionPacket(QByteArray *dataFrame)
                 continue;
             }
 
-            WRJ_PositonState->id = DevId_Temp;
+            WRJ_PositonState->id = WRJStationCtrlID;//DevId_Temp;shi改 需要确认
 
             //**************  幂的次数考虑用全局变量，以便协议改变 **************//
             WRJ_PositonState->Lat = (double)Lat_Temp/pow(10,7);
@@ -460,9 +464,9 @@ QByteArray WRJ_Module::WRJ_Produce_TrackPackt(WayPoint_Struct *wayPoints,quint8 
     oneTrackStream << wayPointNum;
 
     for(int i=0;i<wayPointNum;i++){
-        oneTrackStream << (int)(wayPoints[i].Lat * pow(10,7)) ;
-        oneTrackStream << (int)(wayPoints[i].Lon * pow(10,7)) ;
-        oneTrackStream << (int)(wayPoints[i].Alt * pow(10,1)) ;
+        oneTrackStream << (float)(wayPoints[i].Lat * pow(10,7)) ;
+        oneTrackStream << (float)(wayPoints[i].Lon * pow(10,7)) ;
+        oneTrackStream << (float)(wayPoints[i].Alt * pow(10,1)) ;
     }
 
     dataFrame.append(oneTrack);
@@ -577,10 +581,25 @@ void WRJ_Module::WRJ_RequestGet_CtrlAuthority()
     if(WRJ_Get_or_Release_ControlAuthority_Flag){   //申请控制成功，标志置false，断开连接，并关闭定时器
         WRJ_Get_or_Release_ControlAuthority_Flag = false;
         timer_requestCtrl.stop();
+        WRJ_Get_Ctrl_Flag=true;
         disconnect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
         return ;
     }
-    WRJ_send_CtrlAuthorityPacket(WRJ_Request_Ctrl);
+    else
+    {
+        WRJ_CtrlAuthorityTime++;
+        if(WRJ_CtrlAuthorityTime>20)
+        {
+            timer_requestCtrl.stop();
+            WRJ_CtrlAuthorityTime=0;
+            WRJ_Get_Ctrl_Flag=false;
+            qDebug()<<"request ctrlAuthority failed.";
+            emit WRJ_Get_or_Release_ControlAuthority_Failure();
+            disconnect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
+            return ;
+        }
+        WRJ_send_CtrlAuthorityPacket(WRJ_Request_Ctrl);
+    }
 }
 
 void WRJ_Module::WRJ_RequestRelease_CtrlAuthority()
@@ -588,14 +607,26 @@ void WRJ_Module::WRJ_RequestRelease_CtrlAuthority()
     if(WRJ_Get_or_Release_ControlAuthority_Flag){   //申请释放成功，标志置false，断开连接，并关闭定时器
         WRJ_Get_or_Release_ControlAuthority_Flag = false;
         timer_requestCtrl.stop();
+        WRJ_Get_Ctrl_Flag =true;
         disconnect(&timer_requestRelease,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestRelease_CtrlAuthority);
         return ;
     }
-    WRJ_send_CtrlAuthorityPacket(WRJ_Request_Release);
+    else
+    {
+        WRJ_CtrlAuthorityTime++;
+        if(WRJ_CtrlAuthorityTime>20)
+        {
+            timer_requestCtrl.stop();
+            WRJ_CtrlAuthorityTime=0;            
+            WRJ_Get_Ctrl_Flag=false;
+            qDebug()<<"request ctrlAuthority failed.";
+            emit WRJ_Get_or_Release_ControlAuthority_Failure();
+            disconnect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
+            return ;
+        }
+        WRJ_send_CtrlAuthorityPacket(WRJ_Request_Release);
+    }
 }
-
-
-
 
 bool WRJ_Module::WRJ_get_CtrlAuthority()
 {
@@ -605,14 +636,11 @@ bool WRJ_Module::WRJ_get_CtrlAuthority()
     if(WRJ_Get_Ctrl_Flag){
         return true;
     }
-
-    WRJ_Get_Ctrl_Flag = true;
-
     if(!timer_requestCtrl.isActive()){
         connect(&timer_requestCtrl,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestGet_CtrlAuthority);
+        WRJ_CtrlAuthorityTime=0;
         timer_requestCtrl.start(200);
     }
-
     return true ;
 }
 
@@ -624,19 +652,15 @@ bool WRJ_Module::WRJ_release_CtrlAuthority()
     if(!WRJ_Get_Ctrl_Flag){
         return true;
     }
-
-    WRJ_Get_Ctrl_Flag = false;
-
-    if(!timer_requestRelease.isActive()){
+    if(!timer_requestRelease.isActive())
+    {
         connect(&timer_requestRelease,&QTimer::timeout,this,&WRJ_Module::WRJ_RequestRelease_CtrlAuthority);
+        WRJ_CtrlAuthorityTime=0;
         timer_requestRelease.start(200);
     }
 
     return true;
 }
-
-
-
 
 //*****************************  位置队列存储  *********************************************//
 void WRJ_Module::WRJ_PositionQueue_Init()
@@ -666,7 +690,7 @@ void WRJ_Module::WRJ_PositionQueue_Positions_AllClear()
 
     auto end = savePosition_deque->end();
 
-    while(first <= end){
+    while(first < end){
         free(*first);
         ++first;
     }
@@ -689,7 +713,6 @@ void WRJ_Module::WRJ_PositionQueue_Full_PartClear()
 
 WRJ_POSITIONSTATE_STRU* WRJ_Module::WRJ_TakePosition()
 {
-
     if(savePosition_deque->empty()){
         qDebug()<<"The queue is empty!";
         return Q_NULLPTR;

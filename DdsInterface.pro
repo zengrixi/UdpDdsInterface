@@ -29,6 +29,12 @@ DEFINES += Linux \
 # RTIDDS路径
 MDS_PATH = /home/ywxt-15/win7/app/MDS
 
+CONFIG(debug, release|debug) {
+  SUFFIX = d
+} else {
+  SUFFIX =
+}
+
 INCLUDEPATH += $$MDS_PATH/usr/include \
                 ./IDL \
                 $$MDS_PATH/usr/include \
@@ -40,15 +46,15 @@ LIBS += -L$$MDS_PATH/usr/lib \
         -lMDSxml \
         -lAbstractComponent \
         -lCommunicationManager \
-        -lnddscpp \
-        -lnddsc \
-        -lnddscore \
+        -lnddscpp$$SUFFIX \
+        -lnddsc$$SUFFIX \
+        -lnddscore$$SUFFIX \
         -ldl \
         -lnsl \
-	-lm \
+		-lm \
         -lpthread \
         -lrt \
-        -lLog
+        -lLog$$SUFFIX
 
 SOURCES += \
         main.cpp \
@@ -73,7 +79,8 @@ SOURCES += \
     IDL/Target/targetSupport.cxx \
     testinfo.cxx \
     wrj_function_variable.cpp \
-    wrj_module.cpp
+    wrj_module.cpp \
+    waitdialog.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -100,10 +107,12 @@ HEADERS += \
     IDL/Target/targetSupport.h \
     testinfo.h \
     wrj_function_variable.h \
-    wrj_module.h
+    wrj_module.h \
+    waitdialog.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    waitdialog.ui
 
 DISTFILES += \
     IDL/Entity/lhzs-vrforce-entity.idl \
