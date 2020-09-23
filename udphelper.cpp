@@ -53,7 +53,8 @@ const static msg_process_t s_MsgProcess[] =
 bool g_zdj_init = true;
 
 
-UdpHelper::UdpHelper(): QThread()
+UdpHelper::UdpHelper()
+    : QThread()
     , _eCommObject(None_OBJECT)
     , _bStop(true)
     , _bInit(false)

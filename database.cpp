@@ -5,6 +5,7 @@
 #include "SurveyMath/surveymath.h"
 #include "SurveyMath/geocoordinate.h"
 
+
 using SurveyMath::GeoCoordinate;
 
 
@@ -22,7 +23,8 @@ uint8_t g_xk_control = 0;
     } while ( 0 );
 
 
-DataBase::DataBase()
+DataBase::DataBase(QObject *parent)
+    : QObject(parent)
 {
     startTime=0;
     enemySpeed.clear();
@@ -32,10 +34,12 @@ DataBase::DataBase()
     lastTimeMap.clear();
 }
 
+
 DataBase::~DataBase()
 {
     
 }
+
 
 bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
 {  
@@ -312,7 +316,6 @@ void DataBase::processRecvData(int nDataType, void *pData)
             
             processMsg(pTrackReport, NET_MSGTYPE_TRACK_REPORT);
             
-            TestInfo(pTrackReport);
             break;
         }
         case RECV_MSGTYPE_COR_TRACK_REPORT :

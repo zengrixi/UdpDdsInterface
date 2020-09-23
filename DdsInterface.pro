@@ -61,9 +61,7 @@ LIBS += -L$$MDS_PATH/usr/lib \
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    mdsrecvmsg.cpp \
     database.cpp \
-    mdssendmsg.cpp \
     udphelper.cpp \
     ddshelper.cpp \
     IDL/Entity/lhzs-vrforce-entity.cxx \
@@ -88,10 +86,8 @@ SOURCES += \
 
 HEADERS += \
         mainwindow.h \
-    mdsrecvmsg.h \
     singleton.h \
     database.h \
-    mdssendmsg.h \
     udphelper.h \
     commondef.h \
     ddshelper.h \

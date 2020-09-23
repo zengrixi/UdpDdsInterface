@@ -2,14 +2,21 @@
 
 #include <QApplication>
 #include <QSettings>
+#include <QThread>
 
 #include "wrj_module.h"
 #include "wrj_function_variable.h"
 
-OnWorker::OnWorker(QObject *parent) : QThread(parent)
+OnWorker::OnWorker(QObject *parent)
+    : QThread(parent)
+    , _pDdsHelper(new DdsHelper(this))
 {
     WRJ_Module::instance();
     SaveLog::instance().start();
+
+    QThread *dataWork = new QThread(this);
+    DataBase::instance().moveToThread(dataWork);
+    dataWork->start();
 }
 
 OnWorker::~OnWorker()
@@ -28,6 +35,7 @@ void OnWorker::run()
     while ( result )
     {
         onStartWRJRecv();
+        _pDdsHelper->processMsg(DataBase::instance().getMyMsg());
     }
 
     WRJ_Module::instance().WRJ_release_CtrlAuthority();

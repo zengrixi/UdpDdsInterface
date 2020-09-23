@@ -11,29 +11,43 @@
 #ifndef DDSHELPER_H
 #define DDSHELPER_H
 
-#include <QThread>
+#include <QObject>
 
-#include "mdsrecvmsg.h"
-#include "mdssendmsg.h"
+#include "MDS/AbstractComponent.h"
 #include "commondef.h"
 
-class DdsHelper : public QThread
+using namespace MDS;
+
+// 创建绑定某一消息结构体的自定义接收监听类
+// 参数1为创建的监听类类名
+// 参数2为消息结构体名
+CustomLis_Create(EntityListener, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST);
+CustomLis_Create(TargetListener, LHZS::SDI_TRACK_REPORT);
+
+
+class DdsHelper : public QObject, public AbstractComponent
 {
     Q_OBJECT
-    SINGLETON(DdsHelper)
 public:
-    void stop();
-
-protected:
-    virtual void run() Q_DECL_OVERRIDE;
-    void processMsg(my_msg_t stMyMsg);
-
-private:
-    DdsHelper();
+    DdsHelper(QObject *parent = Q_NULLPTR);
     ~DdsHelper();
-
-    QMutex _stopMutex;
-    bool _bStop;
+    void processMsg(my_msg_t stMyMsg);
+    bool onSendEntityData(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST *pInstance);
+    bool onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance);
+    bool onSendMessageData(LHZS::SDI_TRACK_REPORT *pInstance);
+protected:
+    void initialization();
+    int initEntityStateReportList();
+    int initTrackReport();
+    int initPathChange();
+    int initUAVentityStateList();
+private:
+    // 创建发布/订阅通信器类对象，将某一消息结构体与消息主题进行绑定
+    // Ps: 通信器本身即支持发送，也支持接收，支持自发自收
+    PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_LIST)> *_pEntityRecvCom;
+    PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)> *_pTrackRecvCom;
+    PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST)> *_pUAV_Entity_StateList;
+    PSCommunicator<PSComm_StructName(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ)> *_pCommand_PathChangeReq;
 };
 
 #endif // DDSHELPER_H

@@ -16,6 +16,7 @@
 #include "savelog.h"
 #include "singleton.h"
 #include "udphelper.h"
+#include "ddshelper.h"
 
 class OnWorker : public QThread
 {
@@ -31,6 +32,7 @@ private:
     UdpHelper *_pZDJ_Udp;
     UdpHelper *_pCOR_Udp;
     UdpHelper *_pXK_Udp;
+    DdsHelper *_pDdsHelper;
 protected:
     virtual void run() Q_DECL_OVERRIDE;
 public slots:

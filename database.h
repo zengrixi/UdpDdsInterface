@@ -26,8 +26,9 @@ typedef struct
     vec3_t path[PATH_CHANGE_REQ_COUNT];   
 }path_change_req_t;
 
-class DataBase
+class DataBase : public QObject
 {
+    Q_OBJECT
     SINGLETON(DataBase)
 public:
     // 实体毁伤状态枚举值
@@ -55,7 +56,7 @@ public:
     void setStartTime(DDS_Long timeNow){startTime=timeNow;}
     void createTrack(int m_type);
 private:
-    DataBase();
+    DataBase(QObject *parent = Q_NULLPTR);
     ~DataBase();
 
     // 用于存实体数据

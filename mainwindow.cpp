@@ -30,18 +30,12 @@ void MainWindow::on_startBtn_clicked()
     OnWorker::instance().start();
     DataBase::instance().setStartTime(0);
 
-    if (!DdsHelper::instance().isRunning())
-    {
-        DdsHelper::instance().start();
-    }
-
     connect(&_trackSendTimer, SIGNAL(timeout()), this, SLOT(sendTrackTimerSlot()));
     _trackSendTimer.start(3000);
 }
 
 void MainWindow::on_stopBtn_clicked()
 {
-    DdsHelper::instance().stop();
 //    ui->textEdit->clear();
 //    for(QMap<int,LHZS::SDI_TRACK_REPORT>::iterator it=targetList.begin();it!=targetList.end();it++)
 //    {
