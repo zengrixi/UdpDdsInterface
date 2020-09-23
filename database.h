@@ -46,6 +46,7 @@ public:
         const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
     void processPathChange(WRJ_POSITIONSTATE_STRU *pData);
     void processPathChange(zdj_position_state_list_t *pData);
+    void processTrackReport(zdj_target_track_t *pinstance);
     void processRecvData(int nDataType, void *pData);
     my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);

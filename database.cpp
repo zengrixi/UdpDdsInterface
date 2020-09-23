@@ -112,9 +112,9 @@ void DataBase::releaseEntity(int key)
  * 返 回 值  : void
 *****************************************************************************/
 void DataBase::makeCopy
-    (LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst
+    ( LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst
     , const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src
-    , bool bAllocated)
+    , bool bAllocated )
 {
     if (bAllocated)
     {
@@ -136,9 +136,9 @@ void DataBase::makeCopy
  * 返 回 值  : void
 *****************************************************************************/
 void DataBase::recordPathChangeReq
-    (LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1
+    ( LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1
     , path_change_req_t *p2
-    , uint32_t n)
+    , uint32_t n )
 {
     uint32_t i;
     LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
@@ -239,8 +239,28 @@ void DataBase::processPathChange(zdj_position_state_list_t *pInstance)
             processMsg(pPathChangeReq, NET_MSGTYPE_PATH_CHANGE_REQ);
         }
     }
+}
 
 
+void DataBase::processTrackReport(zdj_target_track_t *pinstance)
+{
+    int i, count;
+
+    count = pinstance->count;
+    
+    for (i = 0; i < count; i++)
+    {
+        LHZS::SDI_TRACK_REPORT *pTrackReport =
+        LHZS::SDI_TRACK_REPORTTypeSupport::create_data();
+
+        pTrackReport->platform_id_ul = 4;
+        pTrackReport->sdi_track_number_ul = pinstance->pTrackReport[i].id;
+        pTrackReport->target_geo_position.lon_f = pinstance->pTrackReport[i].pos.x;
+        pTrackReport->target_geo_position.lat_f = pinstance->pTrackReport[i].pos.y;
+        pTrackReport->time_of_update_ul = pinstance->timestamp;
+
+        processMsg(pTrackReport, NET_MSGTYPE_TRACK_REPORT);
+    }
 }
 
 
@@ -278,7 +298,7 @@ void DataBase::processRecvData(int nDataType, void *pData)
         }
         case RECV_MSGTYPE_ZDJ_TRACK_REPORT :
         {
-            /* comment by 曾日希, 2020-08-30, Mantis号:s, 原因:航迹发送待续. */
+            processTrackReport((zdj_target_track_t *) pData);
             break;
         }
         // 从DDS接收雷达模拟器的目标航迹
