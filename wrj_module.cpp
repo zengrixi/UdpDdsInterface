@@ -1,4 +1,6 @@
 #include "wrj_module.h"
+
+#include "app.h"
 #include "ddshelper.h"
 #include "SurveyMath/surveymath.h"
 
@@ -82,8 +84,8 @@ void WRJ_Module::WRJ_UdpSocket_Init()
 
     //配置文件待写
     LocalPort = 9100;
-    DestinationIP.setAddress(_WRJ_IP);
-    DestinationPort = _WRJ_PORT;
+    DestinationIP.setAddress(App::_WRJ_IP);
+    DestinationPort = App::_WRJ_PORT;
 
     if(!UnicastUdpSocket->bind(LocalPort)){
         qDebug()<<"fail to bind the port: "<<LocalPort;
@@ -97,16 +99,16 @@ void WRJ_Module::WRJ_Track_Init()
     //等待成功信号才发送初始航线并断开与该函数的连接
     disconnect(this,&WRJ_Module::WRJ_Get_or_Release_ControlAuthority_Success,this,&WRJ_Module::WRJ_Track_Init);
 
-    WayPoint_Struct *wayPoints=new WayPoint_Struct[wrj_wayPointNum];
+    WayPoint_Struct *wayPoints=new WayPoint_Struct[App::wrj_wayPointNum];
 
     //************************  初始航线数据 ***********************
-    for(int i=0;i<wrj_wayPointNum;i++)
+    for(int i=0;i<App::wrj_wayPointNum;i++)
     {
-        wayPoints[i].Lon = SurveyMath::DegreeToRadian(wrj_wayIniPoint[i].x);
-        wayPoints[i].Lat = SurveyMath::DegreeToRadian(wrj_wayIniPoint[i].y);
-        wayPoints[i].Alt = wrj_wayIniPoint[i].z;
+        wayPoints[i].Lon = SurveyMath::DegreeToRadian(App::wrj_wayIniPoint[i].x);
+        wayPoints[i].Lat = SurveyMath::DegreeToRadian(App::wrj_wayIniPoint[i].y);
+        wayPoints[i].Alt = App::wrj_wayIniPoint[i].z;
     }
-    WRJ_send_TrackDataPacket(wayPoints,wrj_wayPointNum);
+    WRJ_send_TrackDataPacket(wayPoints,App::wrj_wayPointNum);
     delete[] wayPoints;
     ///释放控制权限????shi待确认
     WRJ_release_CtrlAuthority();
@@ -272,7 +274,7 @@ void WRJ_Module::WRJ_Only_PositionPacket(QByteArray *dataFrame)
                 continue;
             }
 
-            WRJ_PositonState->id = WRJStationCtrlID;//DevId_Temp;shi改 需要确认
+            WRJ_PositonState->id = App::WRJStationCtrlID;//DevId_Temp;shi改 需要确认
 
             //**************  幂的次数考虑用全局变量，以便协议改变 **************//
             WRJ_PositonState->Lat = (double)Lat_Temp/pow(10,7);

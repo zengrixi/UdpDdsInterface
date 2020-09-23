@@ -6,6 +6,7 @@
 
 #include "wrj_module.h"
 #include "wrj_function_variable.h"
+#include "app.h"
 
 OnWorker::OnWorker(QObject *parent)
     : QThread(parent)
@@ -45,18 +46,18 @@ void OnWorker::run()
 void OnWorker::onStartUdp()
 {
     _pWRJ_Udp = new UdpHelper;
-    _pWRJ_Udp->Init(_WRJ_IP, _WRJ_PORT);
+    _pWRJ_Udp->Init(App::_WRJ_IP, App::_WRJ_PORT);
 
     _pZDJ_Udp = new UdpHelper;
-    _pZDJ_Udp->Init(_ZDJ_IP, _ZDJ_PORT);
+    _pZDJ_Udp->Init(App::_ZDJ_IP, App::_ZDJ_PORT);
     _pZDJ_Udp->start();
 
     _pCOR_Udp = new UdpHelper;
-    _pCOR_Udp->Init(_COR_IP,_COR_PORT);
+    _pCOR_Udp->Init(App::_COR_IP, App::_COR_PORT);
     _pCOR_Udp->start();
 
     _pXK_Udp = new UdpHelper;
-    _pXK_Udp->Init(_PXK_IP, _PXK_PORT, 2);
+    _pXK_Udp->Init(App::_PXK_IP, App::_PXK_PORT, 2);
 }
 
 

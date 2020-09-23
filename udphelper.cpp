@@ -4,6 +4,8 @@
 #include <QDataStream>
 #include <QDateTime>
 
+#include "app.h"
+
 
 // 包头信息类型初始化
 const static pack_type_t s_packType[] = 
@@ -378,7 +380,7 @@ int UdpHelper::sendFlightPositionState()
     _pUdpSocket->writeDatagram(ba, _hostAddr, _nPort);
 
     // 将提取出来的预警机信息添加到包体中
-    count = ARRAY_SIZE(g_Enemy_AEW_nPlatID);
+    count = ARRAY_SIZE(App::Enemy_AEW_nPlatID);
 
     in << ZDJ_PACK_HEAD
        << (uint32_t) 0xAA
@@ -389,7 +391,7 @@ int UdpHelper::sendFlightPositionState()
     // 将提取出来的战斗机信息添加到包体中
     for (i = 0; i < count; i++)
     {
-        id = g_Enemy_AEW_nPlatID[i];
+        id = App::Enemy_AEW_nPlatID[i];
 
         pEntityReport = DataBase::instance().getEntityReport(id);
 
@@ -643,7 +645,7 @@ int UdpHelper::sendEntityPositionState()
     in.setByteOrder(QDataStream::LittleEndian);
 #endif
 
-    count = ARRAY_SIZE(g_Enemy_Fighter_nPlatID);
+    count = ARRAY_SIZE(App::Enemy_Fighter_nPlatID);
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
@@ -662,7 +664,7 @@ int UdpHelper::sendEntityPositionState()
     // 将提取出来的战斗机信息添加到包体中
     for (i = 0; i < count; i++)
     {
-        id = g_Enemy_Fighter_nPlatID[i];
+        id = App::Enemy_Fighter_nPlatID[i];
         pEntityReport = DataBase::instance().getEntityReport(id);
         //地方战斗机位置判断
 //        bool is_find=false;

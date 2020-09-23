@@ -4,6 +4,7 @@
 
 #include "SurveyMath/surveymath.h"
 #include "SurveyMath/geocoordinate.h"
+#include "app.h"
 
 
 using SurveyMath::GeoCoordinate;
@@ -393,14 +394,14 @@ my_msg_t DataBase::getMyMsg()
 
 int DataBase::getEntityType(DDS_UnsignedShort platId)
 {
-    if(g_SAR_nPlatID.contains(platId))return 0;
-    if(g_UVA_nPlatID.contains(platId))return 1;
-    if(g_AEW_nPlatID.contains(platId))return 2;
-    if(g_Fight_nPlatID.contains(platId))return 3;
-    if(g_Enemy_Ship_nPlatID.contains(platId))return 4;
-    if(g_Enemy_Fighter_nPlatID.contains(platId))return 5;
-    if(g_Enemy_AEW_nPlatID.contains(platId))return 6;
-    if(g_Entity_nPlatID.contains(platId))return 7;
+    if(App::SAR_nPlatID.contains(platId))return 0;
+    if(App::UVA_nPlatID.contains(platId))return 1;
+    if(App::AEW_nPlatID.contains(platId))return 2;
+    if(App::Fight_nPlatID.contains(platId))return 3;
+    if(App::Enemy_Ship_nPlatID.contains(platId))return 4;
+    if(App::Enemy_Fighter_nPlatID.contains(platId))return 5;
+    if(App::Enemy_AEW_nPlatID.contains(platId))return 6;
+    if(App::Entity_nPlatID.contains(platId))return 7;
     else return -1;
 }
 
@@ -466,11 +467,11 @@ LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *DataBase::getEntityReport(int id)
 
 void DataBase::sendTrack(int m_type,DDS_UnsignedShort platId)
 {
-    if(!detectRangeMap.contains(m_type))return;
+    if(!App::detectRangeMap.contains(m_type))return;
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT m_entity=nowEntity[platId];
-    QMap<int,double> rangeMap=detectRangeMap[m_type];//获取本类传感器探测范围
+    QMap<int,double> rangeMap=App::detectRangeMap[m_type];//获取本类传感器探测范围
     if(m_type==3)//战斗机只有长机发送航迹信息
-        if(platId!=leaderFighterID)return;
+        if(platId!=App::leaderFighterID)return;
     for(QMap<unsigned short,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT>::iterator it=nowEntity.begin();
         it!=nowEntity.end();it++)
     {
@@ -492,7 +493,7 @@ void DataBase::sendTrack(int m_type,DDS_UnsignedShort platId)
         else
         {
             bool is_find=false;
-            foreach(unsigned short fighterID,g_Fight_nPlatID)
+            foreach(unsigned short fighterID,App::Fight_nPlatID)
             {
                 if(!nowEntity.contains(fighterID))continue;
                 LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT fighterState=nowEntity[fighterID];
@@ -826,7 +827,7 @@ void Recv_XK_WRJ_Control(uint32_t type, QDataStream &out)
     out >> id;
     out >> control;
 
-    if ( WRJStationCtrlID == id )///shi修改 待确认
+    if ( App::WRJStationCtrlID == id )///shi修改 待确认
     {
         g_xk_control = control;
     }

@@ -1,5 +1,12 @@
 #ifndef APP_H
 #define APP_H
+
+#include <QList>
+#include <QMap>
+
+#include "commondef.h"
+
+
 class QString;
 
 class App
@@ -26,6 +33,25 @@ public:
     static QString FontName;  //应用程序字体名称
 
     static QString lastOpenDir; //上次打开文件位置
+
+    static QList<unsigned short> Entity_nPlatID;//所有实体ID
+    static QList<unsigned short> SAR_nPlatID;// SAR无人机PlatID
+    static QList<unsigned short> UVA_nPlatID;// 雷达无人机PlatID
+    static QList<unsigned short> AEW_nPlatID;// 预警机PlatID(敌我）
+    static QList<unsigned short> Enemy_Ship_nPlatID;// 海上目标PlatID（敌方船只）
+    static QList<unsigned short> Enemy_Fighter_nPlatID;// 战斗机目标PlatID（敌方？）
+    static QList<unsigned short> Enemy_AEW_nPlatID;// 战斗机目标PlatID（敌方？）
+    static QList<unsigned short> Fight_nPlatID;// 我方战斗机平台ID
+
+    static QMap<int,QMap<int,double> > detectRangeMap;//探测距离key为机型
+    static unsigned short leaderFighterID;    //战斗机长机ID
+    static unsigned short WRJStationCtrlID;    //地面站控制无人机ID
+
+    static quint16 wrj_wayPointNum;
+    static QList<vec3_t> wrj_wayIniPoint;
+
+    static QString _ZDJ_IP,_WRJ_IP,_COR_IP,_PXK_IP;
+    static uint16_t _ZDJ_PORT,_WRJ_PORT,_COR_PORT,_PXK_PORT;
 
     static void ReadConfig();  //读取配置文件,在main函数最开始加载程序载入
     static void WriteConfig(); //写入配置文件,在更改配置文件程序关闭时调用

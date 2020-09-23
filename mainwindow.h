@@ -53,7 +53,6 @@ private:
     TCPSocket *_tcpSARPos, *_tcpSARTrack;
 
     QTimer _trackSendTimer;
-    void readConfig();
 };
 
 #endif // MAINWINDOW_H

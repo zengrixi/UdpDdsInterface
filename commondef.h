@@ -40,22 +40,6 @@ typedef unsigned char           u_char;                   // 类型兼容
 #define ARRAY_SIZE(x)                   (sizeof(x) / sizeof((x)[0]))
 
 
-static QList<unsigned short> g_Entity_nPlatID;//所有实体ID
-static QList<unsigned short> g_SAR_nPlatID;// SAR无人机PlatID
-static QList<unsigned short> g_UVA_nPlatID;// 雷达无人机PlatID
-static QList<unsigned short> g_AEW_nPlatID;// 预警机PlatID(敌我）
-static QList<unsigned short> g_Enemy_Ship_nPlatID;// 海上目标PlatID（敌方船只）
-static QList<unsigned short> g_Enemy_Fighter_nPlatID;// 战斗机目标PlatID（敌方？）
-static QList<unsigned short> g_Enemy_AEW_nPlatID;// 战斗机目标PlatID（敌方？）
-static QList<unsigned short> g_Fight_nPlatID;// 我方战斗机平台ID
-
-static QMap<int,QMap<int,double> > detectRangeMap;//探测距离key为机型
-static unsigned short leaderFighterID;    //战斗机长机ID
-static unsigned short WRJStationCtrlID;    //地面站控制无人机ID
-
-
-static QString _ZDJ_IP,_WRJ_IP,_COR_IP,_PXK_IP;
-static uint16_t _ZDJ_PORT,_WRJ_PORT,_COR_PORT,_PXK_PORT;
 // 战斗机目标PlatID（敌方？）
 static const int g_ZDJ_TargetPlatID[] =
 {
@@ -141,8 +125,6 @@ typedef union
 }vec3_t;
 #define VEC3(x, y, z) { { x, y, z } }
 
-static quint16 wrj_wayPointNum;
-static QList<vec3_t> wrj_wayIniPoint;
 // 数据包头
 typedef struct
 {
