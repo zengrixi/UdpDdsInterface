@@ -140,7 +140,7 @@ void MainWindow::on_InformationTestBtn_clicked()
         //计算运动速度
         LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT oldState=nowEntity[entityState.platId];
         nowEntity[entityState.platId]=entityState;
-        double dist=GeoCoorDinate::DistanceOfRadian(oldState.geodeticLocationLat,oldState.geodeticLocationLon,entityState.geodeticLocationLat,entityState.geodeticLocationLon);
+        double dist=GeoCoordinate::DistanceOfRadian(oldState.geodeticLocationLat,oldState.geodeticLocationLon,entityState.geodeticLocationLat,entityState.geodeticLocationLon);
         double step=entityState.timeOfUpdate-oldState.timeOfUpdate;
         double speed=dist*1000000/step;
         if(enemySpeed.contains(entityState.platId))
@@ -211,7 +211,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
             //非战斗机，由情报系统负责协同
             //计算是否可探测
             double range=rangeMap[type];
-            double dis=GeoCoorDinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,m_entity.geodeticLocationLat,m_entity.geodeticLocationLon);
+            double dis=GeoCoordinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,m_entity.geodeticLocationLat,m_entity.geodeticLocationLon);
             if(dis>range)continue;
         }
         else
@@ -222,7 +222,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
                 if(!nowEntity.contains(fighterID))continue;
                 LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT fighterState=nowEntity[fighterID];
                 double range=rangeMap[type];
-                double dis=GeoCoorDinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
+                double dis=GeoCoordinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
                 if(dis<=range)
                 {
                     is_find=true;
@@ -420,7 +420,7 @@ void MainWindow::readConfig()
     settings.beginGroup("SARDetectRange");
     double SAR_Sea_Range=settings.value("SEA", "200").toDouble();
     double SAR_Air_Range=settings.value("AIR", "100").toDouble();
-    WRJStationCtrlID=settings.value("id","41").toInt();
+    WRJStationCtrlID=settings.value("id","42").toInt();
     QMap<int,double> tempRange;
     tempRange.insert(0,SAR_Air_Range);
     tempRange.insert(1,SAR_Air_Range);

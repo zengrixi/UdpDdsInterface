@@ -683,7 +683,7 @@ int UdpHelper::sendEntityPositionState()
 //            fighterState = DataBase::instance().getEntityReport(fighterID);
 //            QMap<int,double> rangeMap=detectRangeMap[3];
 //            double range=rangeMap[3];
-//            double dis=GeoCoorDinate::DistanceOfRadian(pEntityReport.geodeticLocationLat,pEntityReport.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
+//            double dis=GeoCoordinate::DistanceOfRadian(pEntityReport.geodeticLocationLat,pEntityReport.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
 //            if(dis<=range)
 //            {
 //                is_find=true;

@@ -1,21 +1,23 @@
 #include "geocoordinate.h"
 
+#include <cmath>
+
 #include "SurveyMath/surveymath.h"
 
 namespace SurveyMath {
-    GeoCoorDinate::GeoCoorDinate()
+    GeoCoordinate::GeoCoordinate()
     {
         
     }
 
     
-    GeoCoorDinate::~GeoCoorDinate()
+    GeoCoordinate::~GeoCoordinate()
     {
         
     }
 
 
-    double GeoCoorDinate::DistanceOfDegree
+    double GeoCoordinate::DistanceOfDegree
         ( double dlat1
         , double dlng1
         , double dlat2
@@ -30,7 +32,7 @@ namespace SurveyMath {
     }
 
     
-    double GeoCoorDinate::DistanceOfRadian
+    double GeoCoordinate::DistanceOfRadian
         ( double rlat1
         , double rlng1
         , double rlat2

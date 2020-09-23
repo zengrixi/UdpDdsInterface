@@ -11,14 +11,12 @@
 #ifndef __GEOCOORDINATE_H__
 #define __GEOCOORDINATE_H__
 
-#include "commondef.h"
-
 namespace SurveyMath {
-    class GeoCoorDinate
+    class GeoCoordinate
     {
     public:
-        GeoCoorDinate();
-        ~GeoCoorDinate();
+        GeoCoordinate();
+        ~GeoCoordinate();
         static double DistanceOfDegree(double dlat1, double dlng1, double dlat2, double dlng2);
         static double DistanceOfRadian(double rlat1, double rlng1, double rlat2, double rlng2);   
     };
