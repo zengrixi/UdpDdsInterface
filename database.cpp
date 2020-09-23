@@ -3,6 +3,9 @@
 #include <math.h>
 
 #include "SurveyMath/surveymath.h"
+#include "SurveyMath/geocoordinate.h"
+
+using SurveyMath::GeoCoordinate;
 
 
 uint8_t g_xk_control = 0;
@@ -22,7 +25,11 @@ uint8_t g_xk_control = 0;
 DataBase::DataBase()
 {
     startTime=0;
-    currentTime=0;
+    enemySpeed.clear();
+    nowEntity.clear();
+    entityType.clear();
+    nowEntity.clear();
+    lastTimeMap.clear();
 }
 
 DataBase::~DataBase()
@@ -67,7 +74,6 @@ bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
     }
     makeCopy(&pEntityCopy, pEntity, true);
     if(startTime==0)startTime=pEntityCopy->timeOfUpdate;
-    currentTime=pEntityCopy->timeOfUpdate;
     _dbEntity.insert(pEntity->platId, pEntityCopy);
     _entityMutex.unlock();
     return true;
@@ -362,6 +368,65 @@ my_msg_t DataBase::getMyMsg()
     return stMsg;
 }
 
+int DataBase::getEntityType(DDS_UnsignedShort platId)
+{
+    if(g_SAR_nPlatID.contains(platId))return 0;
+    if(g_UVA_nPlatID.contains(platId))return 1;
+    if(g_AEW_nPlatID.contains(platId))return 2;
+    if(g_Fight_nPlatID.contains(platId))return 3;
+    if(g_Enemy_Ship_nPlatID.contains(platId))return 4;
+    if(g_Enemy_Fighter_nPlatID.contains(platId))return 5;
+    if(g_Enemy_AEW_nPlatID.contains(platId))return 6;
+    if(g_Entity_nPlatID.contains(platId))return 7;
+    else return -1;
+}
+
+void DataBase::createTrack(int m_type)
+{
+    for(QMap<int,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT*>::Iterator it=_dbEntity.begin();
+        it!=_dbEntity.end();it++)
+    {
+        LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *entityState=it.value();
+        int type=getEntityType(entityState->platId);
+        if(!trackPlatID.contains(type))
+        {
+            QMap<unsigned short,int> tm;
+            tm.insert(entityState->platId,0);
+            trackPlatID.insert(type,tm);
+        }
+        else
+        {
+            QMap<unsigned short,int> tm=trackPlatID[type];
+            if(!tm.contains(entityState->platId))
+            {
+                tm.insert(entityState->platId,tm.count());
+                trackPlatID[type]=tm;
+            }
+        }
+        if(!nowEntity.contains(entityState->platId))
+        {
+            nowEntity.insert(entityState->platId,*entityState);
+            entityType.insert(entityState->platId,type);
+            continue;
+        }
+        //计算运动速度
+        LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT oldState=nowEntity[entityState->platId];
+        nowEntity[entityState->platId]=*entityState;
+        double dist=GeoCoordinate::DistanceOfRadian(oldState.geodeticLocationLat,oldState.geodeticLocationLon,entityState->geodeticLocationLat,entityState->geodeticLocationLon);
+        double step=entityState->timeOfUpdate-oldState.timeOfUpdate;
+        double speed=dist*1000000/step;
+        if(enemySpeed.contains(entityState->platId))
+            enemySpeed[entityState->platId]=speed;
+        else
+            enemySpeed.insert(entityState->platId,speed);
+        if(type==m_type)
+        {
+            //友方，发送航迹
+            sendTrack(m_type,entityState->platId);
+        }
+    }
+}
+
 LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *DataBase::getEntityReport(int id)
 {
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *>::iterator dbIterator;
@@ -376,35 +441,166 @@ LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *DataBase::getEntityReport(int id)
     return pEntityCopy;
 }
 
-/*****************************************************************************
- * 函 数 名  : htonf
- * 负 责 人  : 曾日希
- * 创建日期  : 2020年8月25日
- * 函数功能  : 浮点型大小端转换
- * 输入参数  : float hostfloat  待转换数据
- * 输出参数  : 无
- * 返 回 值  : float
-*****************************************************************************/
-float htonf(float hostfloat)
+void DataBase::sendTrack(int m_type,DDS_UnsignedShort platId)
 {
-    typedef union
+    if(!detectRangeMap.contains(m_type))return;
+    LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT m_entity=nowEntity[platId];
+    QMap<int,double> rangeMap=detectRangeMap[m_type];//获取本类传感器探测范围
+    if(m_type==3)//战斗机只有长机发送航迹信息
+        if(platId!=leaderFighterID)return;
+    for(QMap<unsigned short,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT>::iterator it=nowEntity.begin();
+        it!=nowEntity.end();it++)
     {
-        float fTemp;
-        uint8_t szTemp[4];
-    }BYTEORDER;
-    uint8_t chTemp;
-    BYTEORDER uniByteOrder;
-    uniByteOrder.fTemp = hostfloat;
-    
-    chTemp = uniByteOrder.szTemp[0];
-    uniByteOrder.szTemp[0] = uniByteOrder.szTemp[3];
-    uniByteOrder.szTemp[3] = chTemp;
+        //计算是否可见
+        LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT entity=it.value();
+        if(entity.platId==platId)
+            continue;
+        if(!entityType.contains(entity.platId))continue;
+        int type=entityType[entity.platId];
+        if(!rangeMap.contains(type))continue;
+        if(m_type!=3)
+        {
+            //非战斗机，由情报系统负责协同
+            //计算是否可探测
+            double range=rangeMap[type];
+            double dis=GeoCoordinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,m_entity.geodeticLocationLat,m_entity.geodeticLocationLon);
+            if(dis>range)continue;
+        }
+        else
+        {
+            bool is_find=false;
+            foreach(unsigned short fighterID,g_Fight_nPlatID)
+            {
+                if(!nowEntity.contains(fighterID))continue;
+                LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT fighterState=nowEntity[fighterID];
+                double range=rangeMap[type];
+                double dis=GeoCoordinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
+                if(dis<=range)
+                {
+                    is_find=true;
+                    break;
+                }
+            }
+            if(!is_find)continue;
+        }
+        //可探测，发送航迹
+        LHZS::SDI_TRACK_REPORT trackReport;
+        trackReport.sdi_track_number_ul=entity.platId;
+        if(m_type==2)
+            //trackReport.sdi_track_number_ul=1000+entity.platId;
+            trackReport.platform_id_ul=10;
+        else if(m_type==0)
+            //trackReport.sdi_track_number_ul=2000+entity.platId;
+            trackReport.platform_id_ul=20;
+        else if(m_type==3)
+            //trackReport.sdi_track_number_ul=3000+entity.platId;
+            trackReport.platform_id_ul=30;
+        else
+            trackReport.platform_id_ul=40;
 
-    chTemp = uniByteOrder.szTemp[1];
-    uniByteOrder.szTemp[1] = uniByteOrder.szTemp[2];
-    uniByteOrder.szTemp[2] = chTemp;
-
-    return uniByteOrder.fTemp;
+        trackReport.platform_id_ul+=trackPlatID[m_type][m_entity.platId];
+        trackReport.radar_track_number_uh=0;
+        trackReport.ssr_track_number_uh=0;
+        trackReport.esm_target_number_uh=0;
+        trackReport.csm_target_number_uh=0;
+        trackReport.ir_target_number_uh=0;
+        LHZS::TARGET_ATTRIBUTE_DATA tad;
+        tad.conflict_flag_uh[0]=entity.platId;
+        tad.conflict_flag_uh[1]=0;
+        tad.conflict_flag_uh[2]=0;
+        tad.conflict_flag_uh[3]=0;
+        tad.JEM_type_e=0;
+        tad.ident_confidence_f=1;
+        tad.civil_military_e=1;
+        tad.civil_military_conf_f=1;
+        tad.target_class_e=type;
+        tad.class_confidence_f=1;
+        tad.target_model_e=0;
+        tad.model_confidence_f=0;
+        tad.target_nation_e=0;
+        tad.nation_confidence_f=0;
+        tad.rcs_confidence_f=0;
+        switch(type)
+        {
+        case 0://SAR无人机
+            tad.target_rcs_e=1;
+            tad.target_type_e=0;
+            tad.identification_e=0;
+            trackReport.threat_level_e=0;
+            trackReport.sdi_track_number_ul+=2000;
+            trackReport.ir_target_number_uh=trackReport.sdi_track_number_ul;
+            trackReport.ssr_track_number_uh=trackReport.sdi_track_number_ul;
+            break;
+        case 1://雷达无人机
+            tad.target_rcs_e=1;
+            tad.target_type_e=0;
+            tad.identification_e=0;
+            trackReport.threat_level_e=0;
+            trackReport.sdi_track_number_ul+=3000;
+            trackReport.radar_track_number_uh=trackReport.sdi_track_number_ul;
+            break;
+        case 2://预警机
+            tad.target_rcs_e=3;
+            tad.target_type_e=0;
+            tad.identification_e=0;
+            trackReport.threat_level_e=0;
+            trackReport.sdi_track_number_ul+=1000;
+            break;
+        case 3://我方战机
+            tad.target_rcs_e=2;
+            tad.target_type_e=0;
+            tad.identification_e=0;
+            trackReport.threat_level_e=0;
+            trackReport.sdi_track_number_ul+=4000;
+            break;
+        case 4://敌方海上目标
+            tad.target_rcs_e=3;
+            tad.target_type_e=1;
+            tad.identification_e=1;
+            trackReport.threat_level_e=1;
+            trackReport.sdi_track_number_ul+=5000;
+            break;
+        case 5://敌方战机
+            tad.target_rcs_e=2;
+            tad.target_type_e=0;
+            tad.identification_e=1;
+            trackReport.threat_level_e=2;
+            trackReport.sdi_track_number_ul+=4000;
+            break;
+        case 6://敌方预警机
+            tad.target_rcs_e=3;
+            tad.target_type_e=0;
+            tad.identification_e=1;
+            trackReport.threat_level_e=3;
+            trackReport.sdi_track_number_ul+=1000;
+            break;
+        }
+        trackReport.icao_addr_ul=0;
+        trackReport.ais_mmsi_ul=0;
+        memset(trackReport.call_sign_c,0,16);
+        trackReport.net_obj_addr_uh=0;
+        trackReport.track_status_e=0;
+        trackReport.track_quality_uh=1;
+        trackReport.track_source_e=0;
+        trackReport.target_geo_position.alt_f=entity.geodeticLocationAlt;
+        trackReport.target_geo_position.lat_f=entity.geodeticLocationLat;
+        trackReport.target_geo_position.lon_f=entity.geodeticLocationLon;
+        trackReport.target_velocity.platform_vx_f=entity.topographicVelocityX;
+        trackReport.target_velocity.platform_vy_f=entity.topographicVelocityY;
+        trackReport.target_velocity.platform_vz_f=entity.topographicVelocityZ;
+        if(enemySpeed.contains(entity.platId))
+            trackReport.speed_f=enemySpeed[entity.platId];
+        else
+            trackReport.speed_f=0;
+        trackReport.heading_f=entity.topographicPhi;
+        trackReport.mission_type_e=0;//探测
+        trackReport.formation_size_uh=1;//探测
+        trackReport.maneuver_indicator_e=0;//探测
+        trackReport.time_of_update_ul=entity.timeOfUpdate;
+        trackReport.target_attribute_data=tad;//探测
+        memset(trackReport.spare_c,0,24);
+        processRecvData(DDS_MSGTYPE_RADAR_TRACK_REPORT, &trackReport);
+    }
 }
 
 

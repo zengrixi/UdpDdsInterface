@@ -49,9 +49,10 @@ public:
     void processRecvData(int nDataType, void *pData);
     my_msg_t getMyMsg();
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *getEntityReport(int id);
+    void sendTrack(int m_type,DDS_UnsignedShort);
     DDS_Long getStartTime(){return startTime;}
-    DDS_Long getCurrentTime(){return currentTime;}
-    void setStartTime(DDS_Long timeNow){startTime=timeNow;currentTime=timeNow;}
+    void setStartTime(DDS_Long timeNow){startTime=timeNow;}
+    void createTrack(int m_type);
 private:
     DataBase();
     ~DataBase();
@@ -65,13 +66,19 @@ private:
     QMutex _entityMutex;
     QMutex _msgMutex;
     DDS_Long startTime;
-    DDS_Long currentTime;
+
+    QMap<int,QMap<DDS_UnsignedShort,int> > trackPlatID;
+    QMap<DDS_UnsignedShort,double> enemySpeed;//运动速度，key：platId
+    QMap<DDS_UnsignedShort,int> entityType;//实体类型，key：platId
+    QMap<DDS_UnsignedShort,QMap<unsigned short,unsigned long> > lastTimeMap;
+    QMap<DDS_UnsignedShort,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT> nowEntity;//实体当前状态，key：platId
+    int trackIndex;
+    int getEntityType(DDS_UnsignedShort platId);
 };
 
 /*----------------------------------------------*
  * 全局函数定义                                       *
  *----------------------------------------------*/
-extern float htonf(float hostfloat);
 
 void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n);
 

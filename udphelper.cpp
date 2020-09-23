@@ -232,24 +232,11 @@ void UdpHelper::sendMsg2ZDJ()
     
     if ( g_zdj_init )
     {
-//        if ( sendFlightPositionState() == 0 )
-//        {
-//            g_zdj_init = false;
-//        }
-//        sendFlightPositionState();
-        sendFlightControlState(true);
-
-        //8分钟后控制权交给战斗机
-        DDS_Long currentTime=DataBase::instance().getCurrentTime();
-        DDS_Long startTime=DataBase::instance().getStartTime();
-        if((currentTime-startTime)>=8*60*1000)
+        if ( sendFlightPositionState() == 0 )
         {
-            g_zdj_init=false;
-            //发送控制权申请  shi修改待确认
-//            sendFlightControlState(true);
-            sendFlightPositionState();
             g_zdj_init = false;
         }
+//            sendFlightPositionState();
     }
 
     result = sendTargetPositionState();
