@@ -31,8 +31,6 @@ private:
     UdpHelper *_pZDJ_Udp;
     UdpHelper *_pCOR_Udp;
     UdpHelper *_pXK_Udp;
-
-    void readConfig();
 protected:
     virtual void run() Q_DECL_OVERRIDE;
 public slots:

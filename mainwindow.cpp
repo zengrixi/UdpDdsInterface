@@ -1,16 +1,21 @@
 #include "mainwindow.h"
 
-#include "ddshelper.h"
 #include <QDebug>
 #include <QMessageBox>
+
+#include "ddshelper.h"
 #include "app.h"
 #include "waitdialog.h"
+#include "SurveyMath/geocoordinate.h"
+
+
+using namespace SurveyMath;
+
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     readConfig();
-    OnWorker::instance();
 }
 
 MainWindow::~MainWindow()
@@ -21,13 +26,15 @@ MainWindow::~MainWindow()
 void MainWindow::on_startBtn_clicked()
 {
     // 启动DDS接收线程
+    OnWorker::instance().onStartUdp();
+    OnWorker::instance().start();
+    DataBase::instance().setStartTime(0);
+
     if (!DdsHelper::instance().isRunning())
     {
         DdsHelper::instance().start();
     }
-    OnWorker::instance().onStartUdp();
-    OnWorker::instance().start();
-    DataBase::instance().setStartTime(0);
+
 }
 
 void MainWindow::on_stopBtn_clicked()
@@ -133,7 +140,7 @@ void MainWindow::on_InformationTestBtn_clicked()
         //计算运动速度
         LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT oldState=nowEntity[entityState.platId];
         nowEntity[entityState.platId]=entityState;
-        double dist=getDistance(oldState.geodeticLocationLat,oldState.geodeticLocationLon,entityState.geodeticLocationLat,entityState.geodeticLocationLon);
+        double dist=GeoCoorDinate::DistanceOfRadian(oldState.geodeticLocationLat,oldState.geodeticLocationLon,entityState.geodeticLocationLat,entityState.geodeticLocationLon);
         double step=entityState.timeOfUpdate-oldState.timeOfUpdate;
         double speed=dist*1000000/step;
         if(enemySpeed.contains(entityState.platId))
@@ -204,7 +211,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
             //非战斗机，由情报系统负责协同
             //计算是否可探测
             double range=rangeMap[type];
-            double dis=getDistance(entity.geodeticLocationLat,entity.geodeticLocationLon,m_entity.geodeticLocationLat,m_entity.geodeticLocationLon);
+            double dis=GeoCoorDinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,m_entity.geodeticLocationLat,m_entity.geodeticLocationLon);
             if(dis>range)continue;
         }
         else
@@ -215,7 +222,7 @@ void MainWindow::sendTrack(int m_type,unsigned short platId)
                 if(!nowEntity.contains(fighterID))continue;
                 LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT fighterState=nowEntity[fighterID];
                 double range=rangeMap[type];
-                double dis=getDistance(entity.geodeticLocationLat,entity.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
+                double dis=GeoCoorDinate::DistanceOfRadian(entity.geodeticLocationLat,entity.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
                 if(dis<=range)
                 {
                     is_find=true;

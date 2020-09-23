@@ -1,5 +1,6 @@
 #include "wrj_module.h"
 #include "ddshelper.h"
+#include "SurveyMath/surveymath.h"
 
 QMutex mutex_queue;
 
@@ -101,8 +102,8 @@ void WRJ_Module::WRJ_Track_Init()
     //************************  初始航线数据 ***********************
     for(int i=0;i<wrj_wayPointNum;i++)
     {
-        wayPoints[i].Lon = angle(wrj_wayIniPoint[i].x);
-        wayPoints[i].Lat = angle(wrj_wayIniPoint[i].y);
+        wayPoints[i].Lon = SurveyMath::DegreeToRadian(wrj_wayIniPoint[i].x);
+        wayPoints[i].Lat = SurveyMath::DegreeToRadian(wrj_wayIniPoint[i].y);
         wayPoints[i].Alt = wrj_wayIniPoint[i].z;
     }
     WRJ_send_TrackDataPacket(wayPoints,wrj_wayPointNum);
@@ -714,7 +715,6 @@ void WRJ_Module::WRJ_PositionQueue_Full_PartClear()
 WRJ_POSITIONSTATE_STRU* WRJ_Module::WRJ_TakePosition()
 {
     if(savePosition_deque->empty()){
-        qDebug()<<"The queue is empty!";
         return Q_NULLPTR;
     }
 

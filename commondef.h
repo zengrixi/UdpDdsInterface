@@ -40,9 +40,6 @@ typedef unsigned char           u_char;                   // 类型兼容
 #define ARRAY_SIZE(x)                   (sizeof(x) / sizeof((x)[0]))
 
 
-#define PI                              3.141592653
-#define EARTH_RADIUS                    6378.137        // 地球近似半径
-
 static QList<unsigned short> g_Entity_nPlatID;//所有实体ID
 static QList<unsigned short> g_SAR_nPlatID;// SAR无人机PlatID
 static QList<unsigned short> g_UVA_nPlatID;// 雷达无人机PlatID

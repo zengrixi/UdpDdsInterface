@@ -2,6 +2,9 @@
 
 #include <math.h>
 
+#include "SurveyMath/surveymath.h"
+
+
 uint8_t g_xk_control = 0;
 
 #define processMsg(p, t)                                \
@@ -404,90 +407,6 @@ float htonf(float hostfloat)
     return uniByteOrder.fTemp;
 }
 
-// 求弧度
-double radian(double d)
-{
-    // 角度1˚ = π / 180
-    return d / 180 * PI;
-}
-
-double angle(double d)
-{
-    return d * 180 / PI;
-}
-
-/*****************************************************************************
- * 函 数 名  : getDistance
- * 负 责 人  : 曾日希
- * 创建日期  : 2020年8月26日
- * 函数功能  : 根据两点经纬度计算距离
- * 输入参数  : double lat1
-               double lng1
-               double lat2
-               double lng2
- * 输出参数  : 无
- * 返 回 值  : double
-*****************************************************************************/
-double getDistance(double lat1, double lng1, double lat2, double lng2)
-{
-    double radLat1 = radian(lat1);
-    double radLat2 = radian(lat2);
-    double a = radLat1 - radLat2;
-    double b = radian(lng1) - radian(lng2);
-
-    double dst = 2 * asin((sqrt(pow(sin(a / 2), 2) + cos(radLat1) * cos(radLat2) * pow(sin(b / 2), 2) )));
-
-    dst = dst * EARTH_RADIUS;
-    dst = round(dst * 10000) / 10000;
-
-    return dst;// 单位：公里
-}
-
-
-vec2_t radian2Angle(vec2_t lonlat)
-{
-    vec2_t v;
-
-    v.x = angle(lonlat.x);
-    v.y = angle(lonlat.y);
-
-    return v;
-}
-
-
-vec2_t angle2Radian(vec2_t lonlat)
-{
-    vec2_t v;
-
-    v.x = radian(lonlat.x);
-    v.y = radian(lonlat.y);
-
-    return v;
-}
-
-
-vec2_t lonLat2Morcator(vec2_t lonlat)
-{
-    vec2_t mercator;
-
-    mercator.x = lonlat.x * 20037508.342789 / 180;
-    mercator.y = log(tan((90 + lonlat.y) * PI / 360)) / (PI / 180);
-    mercator.y = (double) (mercator.y * 20037508.342789 / 180);
-
-    return mercator;
-}
-
-
-vec2_t mercator2LonLat(vec2_t mercator)
-{
-    vec2_t lonlat;
-
-    lonlat.x =   (mercator.x / 20037508.342789 * 180);
-	lonlat.y =  (mercator.y / 20037508.342789 * 180);
-	lonlat.y = (double) (180 / PI * (2 * atan(exp(lonlat.y * PI / 180)) - PI / 2));
-
-    return lonlat;
-}
 
 /*****************************************************************************
  * 函 数 名  : Send_ASpaceX_WRJ_Route
@@ -507,10 +426,8 @@ void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n)
     
     for (i = 0; i < n; i++)
     {
-        v = radian2Angle(pos[i].xy);
-        
-        way[i].Lon = v.x;
-        way[i].Lat = v.y;
+        way[i].Lon = SurveyMath::RadianToDegree(pos[i].x);
+        way[i].Lat = SurveyMath::RadianToDegree(pos[i].y);
         way[i].Lon = pos[i].z;
     }
     WRJ_Module::instance().WRJ_send_TrackDataPacket(way, n);

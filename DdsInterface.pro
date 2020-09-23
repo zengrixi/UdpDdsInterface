@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network positioning
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,7 +29,7 @@ DEFINES += Linux \
     RTI_UNIX
 
 # RTIDDS路径
-MDS_PATH = /home/zeng/MDS
+MDS_PATH = /home/ywxt-18/MDS
 
 CONFIG(debug, release|debug) {
   SUFFIX = d
@@ -82,7 +82,9 @@ SOURCES += \
     testinfo.cxx \
     wrj_function_variable.cpp \
     wrj_module.cpp \
-    waitdialog.cpp
+    waitdialog.cpp \
+	SurveyMath/geocoordinate.cpp \
+	SurveyMath/surveymath.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -110,7 +112,9 @@ HEADERS += \
     testinfo.h \
     wrj_function_variable.h \
     wrj_module.h \
-    waitdialog.h
+    waitdialog.h \
+	SurveyMath/geocoordinate.h \
+	SurveyMath/surveymath.h
 
 FORMS += \
         mainwindow.ui \

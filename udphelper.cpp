@@ -93,7 +93,6 @@ void UdpHelper::stop()
 *****************************************************************************/
 void UdpHelper::Init(QString addr, uint16_t port, int mode)
 {
-    g_zdj_init=true;
     _hostAddr.setAddress(addr);
     _nPort = port;
     _pUdpSocket = new QUdpSocket(this);
@@ -128,8 +127,6 @@ void UdpHelper::Init(QString addr, uint16_t port, int mode)
 
     // 接收数据绑定
     connect(_pUdpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
-    
-    sendFlightControlState(false);//初始状态控制权在导调 shi修改待确认
 }
 
 
@@ -239,7 +236,8 @@ void UdpHelper::sendMsg2ZDJ()
 //        {
 //            g_zdj_init = false;
 //        }
-        sendFlightPositionState();
+//        sendFlightPositionState();
+        sendFlightControlState(true);
 
         //8分钟后控制权交给战斗机
         DDS_Long currentTime=DataBase::instance().getCurrentTime();
@@ -248,7 +246,9 @@ void UdpHelper::sendMsg2ZDJ()
         {
             g_zdj_init=false;
             //发送控制权申请  shi修改待确认
-            sendFlightControlState(true);
+//            sendFlightControlState(true);
+            sendFlightPositionState();
+            g_zdj_init = false;
         }
     }
 
@@ -285,12 +285,12 @@ int UdpHelper::sendTargetPositionState()
 
     // 计算包长度
     size = sizeof(package_head_t) + sizeof(uint8_t) +
-    sizeof(target_position_state_list_t) * count + sizeof(uint32_t);
+    sizeof(target_position_state_t) * count + sizeof(uint32_t);
 
     in << ZDJ_PACK_HEAD
        << (uint32_t) 0xAA
        << size
-       << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
+       << QTime::currentTime().msec()// 流入当前时间戳
        << count;
 
     // 将提取出来的战斗机信息添加到包体中
@@ -356,7 +356,7 @@ int UdpHelper::sendFlightPositionState()
     in << ZDJ_PACK_HEAD
        << (uint32_t) 0xAA
        << size
-       << QDateTime::currentDateTime().toTime_t()// 流入当前时间戳
+       << QTime::currentTime().msec()// 流入当前时间戳
        << count;
 
     // 将提取出来的战斗机信息添加到包体中
@@ -683,7 +683,7 @@ int UdpHelper::sendEntityPositionState()
 //            fighterState = DataBase::instance().getEntityReport(fighterID);
 //            QMap<int,double> rangeMap=detectRangeMap[3];
 //            double range=rangeMap[3];
-//            double dis=getDistance(pEntityReport.geodeticLocationLat,pEntityReport.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
+//            double dis=GeoCoorDinate::DistanceOfRadian(pEntityReport.geodeticLocationLat,pEntityReport.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);
 //            if(dis<=range)
 //            {
 //                is_find=true;
