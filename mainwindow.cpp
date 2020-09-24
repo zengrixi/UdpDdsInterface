@@ -12,23 +12,25 @@
 using namespace SurveyMath;
 
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , _onWoker(new OnWorker())
 {
     ui->setupUi(this);
-    App::ReadConfig();
 }
 
 MainWindow::~MainWindow()
 {
+    _onWoker->deleteLater();
     delete ui;
 }
 
 void MainWindow::on_startBtn_clicked()
 {
     // 启动DDS接收线程
-    OnWorker::instance().onStartUdp();
-    OnWorker::instance().start();
-    DataBase::instance().setStartTime(0);
+    _onWoker->onStartUdp();
+    _onWoker->start();
 
     connect(&_trackSendTimer, SIGNAL(timeout()), this, SLOT(sendTrackTimerSlot()));
     _trackSendTimer.start(3000);
@@ -98,10 +100,10 @@ void MainWindow::on_InformationTestBtn_clicked()
 
 void MainWindow::sendTrackTimerSlot()
 {
-    DataBase::instance().createTrack(0);//预警机，情报联调用，实际由预警机雷达模拟器给出
-    DataBase::instance().createTrack(1);//SAR无人机，情报联调用，实际由SAR模拟器给出
-    DataBase::instance().createTrack(2);//雷达无人机,如果38所不能给出，则由此处给出
-    DataBase::instance().createTrack(3);//战斗机，情报联调用，实际由空工大给出
+    DataBase::instance()->createTrack(0);//预警机，情报联调用，实际由预警机雷达模拟器给出
+    DataBase::instance()->createTrack(1);//SAR无人机，情报联调用，实际由SAR模拟器给出
+    DataBase::instance()->createTrack(2);//雷达无人机,如果38所不能给出，则由此处给出
+    DataBase::instance()->createTrack(3);//战斗机，情报联调用，实际由空工大给出
 }
 
 void MainWindow::on_OWSTestBtn_clicked()

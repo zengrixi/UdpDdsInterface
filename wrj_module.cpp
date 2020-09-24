@@ -38,6 +38,14 @@ int Length_ExceptDataFrame = packetHeadLength + packetTailLength;
 unsigned char WRJ_Packet_FirstHead  = 0xAA;
 unsigned char WRJ_Packet_SecondHead = 0x55;
 
+// 线程安全单例
+Q_GLOBAL_STATIC(WRJ_Module, wrjmodule)
+
+WRJ_Module *WRJ_Module::instance()
+{
+    return wrjmodule();
+}
+
 WRJ_Module::WRJ_Module()
 {
    WRJ_Init();
@@ -71,10 +79,9 @@ void WRJ_Module::WRJ_Init()
     qDebug()<<"-------------------- WRJ_Module thread is: "<<QThread::currentThreadId();
 
     WRJ_PositionQueue_Init();
-    sleep(1);
 
     WRJ_UdpSocket_Init();
-    sleep(1);
+
     //qDebug()<<"right 2";
 }
 

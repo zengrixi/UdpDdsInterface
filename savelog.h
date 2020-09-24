@@ -14,8 +14,6 @@
 
 #include <QObject>
 
-#include "singleton.h"
-
 class QFile;
 class QTcpSocket;
 class QTcpServer;
@@ -32,7 +30,11 @@ class SaveLog : public QObject
 #endif /* quc */
 {
     Q_OBJECT
-    SINGLETON(SaveLog)
+
+public:
+    SaveLog();
+    ~SaveLog();
+    static SaveLog *instance();
 public slots:
     void save(const QString &content);
     void setName(const QString &name);
@@ -45,9 +47,6 @@ signals:
     void send(const QString &content);
 
 private:
-    SaveLog();
-    ~SaveLog();
-
     QFile *_pFile;      ///<文件对象
     bool _bToNet;       ///<是否重定向到网络
     QString _sPath;     ///<日志文件路径
@@ -59,7 +58,11 @@ private:
 class SendLog : public QObject
 {
     Q_OBJECT
-    SINGLETON(SendLog)
+
+public:
+    SendLog();
+    ~SendLog();
+    static SendLog *instance();
 public slots:
     void send(const QString &content);
 
@@ -67,9 +70,6 @@ private slots:
     void newConnection();
 
 private:
-    SendLog();
-    ~SendLog();
-
     QTcpSocket *_pSocket;
     QTcpServer *_pServer;
 };

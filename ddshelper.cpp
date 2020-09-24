@@ -34,9 +34,6 @@ void DdsHelper::initialization()
 
 int DdsHelper::initEntityStateReportList()
 {
-    // 创建自定义接收监听类对象
-    EntityListener entityMsg;
-
     // 创建发布/订阅通信器类对象，将某一消息结构体与消息主题进行绑定
     // 参数可以使用根目录下的组件配置文件名 softwareBlueprint.xml 中定义
     // 也可以自行传入参数 domainID, topic等
@@ -53,7 +50,7 @@ int DdsHelper::initEntityStateReportList()
     }
 
     // 调用订阅消息函数接口开始订阅消息
-    _pEntityRecvCom->subscribeMsg(&entityMsg);
+    _pEntityRecvCom->subscribeMsg(&_entityMsg);
 
     return 0;
 }
@@ -61,10 +58,8 @@ int DdsHelper::initEntityStateReportList()
 
 int DdsHelper::initTrackReport()
 {
-    TargetListener targetMsg;
-
-    unsigned int id = 0;
-    QString topic = "LHZS::SDI_TRACK_REPORT";
+    unsigned int id = 1;
+    QString topic = "SDI_TRACK_REPORT";
 
     _pTrackRecvCom = 
     new PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)>
@@ -75,7 +70,7 @@ int DdsHelper::initTrackReport()
         return -1;
     }
 
-    _pTrackRecvCom->subscribeMsg(&targetMsg);
+    _pTrackRecvCom->subscribeMsg(&_targetMsg);
 
     return 0;
 }
@@ -188,6 +183,7 @@ bool DdsHelper::onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
 
 bool DdsHelper::onSendMessageData(LHZS::SDI_TRACK_REPORT *pInstance)
 {
+    TestInfo(pInstance);
     return _pTrackRecvCom->publishMsg(pInstance, 0);
 }
 
@@ -204,7 +200,7 @@ void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_
         }
 
         // 存储接收到的实体数据
-        DataBase::instance().recordEntity(&e);
+        DataBase::instance()->recordEntity(&e);
     }
 }
 
@@ -212,6 +208,6 @@ void EntityListener::processData(const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT_
 void TargetListener::processData(const LHZS::SDI_TRACK_REPORT &report)
 {
     LHZS::SDI_TRACK_REPORT lcTrackReport = report;
-    DataBase::instance().processRecvData(DDS_MSGTYPE_RADAR_TRACK_REPORT, &lcTrackReport);
+    //DataBase::instance()->processRecvData(DDS_MSGTYPE_RADAR_TRACK_REPORT, &lcTrackReport);
 }
 

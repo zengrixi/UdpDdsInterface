@@ -288,7 +288,7 @@ int UdpHelper::sendTargetPositionState()
     {
         id = g_ZDJ_TargetPlatID[i];
 
-        pEntityReport = DataBase::instance().getEntityReport(id);
+        pEntityReport = DataBase::instance()->getEntityReport(id);
 
         if ( !pEntityReport )
         {
@@ -354,7 +354,7 @@ int UdpHelper::sendFlightPositionState()
     {
         id = g_ZDJ_TargetPlatID[i];
 
-        pEntityReport = DataBase::instance().getEntityReport(id);
+        pEntityReport = DataBase::instance()->getEntityReport(id);
 
         if ( !pEntityReport )
         {
@@ -393,7 +393,7 @@ int UdpHelper::sendFlightPositionState()
     {
         id = App::Enemy_AEW_nPlatID[i];
 
-        pEntityReport = DataBase::instance().getEntityReport(id);
+        pEntityReport = DataBase::instance()->getEntityReport(id);
 
         if ( !pEntityReport )
         {
@@ -665,12 +665,12 @@ int UdpHelper::sendEntityPositionState()
     for (i = 0; i < count; i++)
     {
         id = App::Enemy_Fighter_nPlatID[i];
-        pEntityReport = DataBase::instance().getEntityReport(id);
+        pEntityReport = DataBase::instance()->getEntityReport(id);
         //地方战斗机位置判断
 //        bool is_find=false;
 //        foreach(unsigned short fighterID,g_Fight_nPlatID)
 //        {
-//            fighterState = DataBase::instance().getEntityReport(fighterID);
+//            fighterState = DataBase::instance()->getEntityReport(fighterID);
 //            QMap<int,double> rangeMap=detectRangeMap[3];
 //            double range=rangeMap[3];
 //            double dis=GeoCoordinate::DistanceOfRadian(pEntityReport.geodeticLocationLat,pEntityReport.geodeticLocationLon,fighterState.geodeticLocationLat,fighterState.geodeticLocationLon);

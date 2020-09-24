@@ -15,7 +15,6 @@
 #include <QMutex>
 #include <QFile>
 #include "commondef.h"
-#include "singleton.h"
 
 
 #define PATH_CHANGE_REQ_COUNT 10// 航线的位置数量
@@ -29,7 +28,6 @@ typedef struct
 class DataBase : public QObject
 {
     Q_OBJECT
-    SINGLETON(DataBase)
 public:
     // 实体毁伤状态枚举值
     typedef enum
@@ -38,8 +36,10 @@ public:
         DAMAGE_SLIGHT,
         DAMAGE_MODERATE,
         DAMAGE_DESTROYED,
-    }EntityDamageState;
-
+    }EntityDamageState; 
+    DataBase(QObject *parent = Q_NULLPTR);
+    ~DataBase();
+    static DataBase *instance();
     bool recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity);
     void releaseEntity(int key);
     void recordPathChangeReq(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1, path_change_req_t *p2, uint32_t n);
@@ -56,9 +56,6 @@ public:
     void setStartTime(DDS_Long timeNow){startTime=timeNow;}
     void createTrack(int m_type);
 private:
-    DataBase(QObject *parent = Q_NULLPTR);
-    ~DataBase();
-
     // 用于存实体数据
     QMap<int, LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *> _dbEntity;
     QMap<uint32_t, path_change_req_t *> _wrjPathReq;

@@ -10,6 +10,17 @@
 #include <QDir>
 #include "myhelper.h"
 
+
+Q_GLOBAL_STATIC(SaveLog, savelog)
+Q_GLOBAL_STATIC(SendLog, sendlog)
+
+
+SaveLog *SaveLog::instance()
+{
+    return savelog();
+}
+
+
 // 日志重定向
 #if ( QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
 void Log(QtMsgType eType, const char * sMsg)
@@ -45,12 +56,12 @@ void Log(QtMsgType type, const QMessageLogContext &, const QString & msg)
             break;
     }
 
-    SaveLog::instance().save(content);
+    SaveLog::instance()->save(content);
 }
 
 SaveLog::SaveLog(): QObject(Q_NULLPTR)
 {
-    connect(this, SIGNAL(send(QString)), &SendLog::instance(), SLOT(send(QString)));
+    connect(this, SIGNAL(send(QString)), SendLog::instance(), SLOT(send(QString)));
     _pFile = new QFile(this);
     _bToNet = false;
 
@@ -136,6 +147,13 @@ void SaveLog::setName(const QString & name)
 {
     _sName = name;
 }
+
+
+SendLog *SendLog::instance()
+{
+    return sendlog();
+}
+
 
 SendLog::SendLog()
 {

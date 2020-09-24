@@ -86,7 +86,6 @@ SOURCES += \
 
 HEADERS += \
         mainwindow.h \
-    singleton.h \
     database.h \
     udphelper.h \
     commondef.h \

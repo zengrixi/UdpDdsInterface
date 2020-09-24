@@ -51,6 +51,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     TCPSocket *_tcpSARPos, *_tcpSARTrack;
+    OnWorker *_onWoker;
 
     QTimer _trackSendTimer;
 };

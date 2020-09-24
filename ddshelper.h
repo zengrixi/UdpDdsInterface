@@ -48,6 +48,9 @@ private:
     PSCommunicator<PSComm_StructName(LHZS::SDI_TRACK_REPORT)> *_pTrackRecvCom;
     PSCommunicator<PSComm_StructName(LHZS::VRFORCE_ENTITY::UAV_ENTITYSTATE_REPORT_LIST)> *_pUAV_Entity_StateList;
     PSCommunicator<PSComm_StructName(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ)> *_pCommand_PathChangeReq;
+    // 创建自定义接收监听类对象
+    EntityListener _entityMsg;
+    TargetListener _targetMsg;
 };
 
 #endif // DDSHELPER_H

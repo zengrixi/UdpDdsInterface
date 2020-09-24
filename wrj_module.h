@@ -22,7 +22,6 @@
 #include <QTimer>
 #include <QThread>
 #include "wrj_function_variable.h"
-#include "singleton.h"
 
 using namespace std;
 
@@ -41,10 +40,10 @@ using namespace std;
 class WRJ_Module:public QObject
 {
     Q_OBJECT
-    SINGLETON(WRJ_Module)
 public:
     WRJ_Module();
     ~WRJ_Module();
+    static WRJ_Module *instance();
 
     void WRJ_UdpSocket_Init();
     void WRJ_Track_Init();

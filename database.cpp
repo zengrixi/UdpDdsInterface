@@ -9,7 +9,6 @@
 
 using SurveyMath::GeoCoordinate;
 
-
 uint8_t g_xk_control = 0;
 
 #define processMsg(p, t)                                \
@@ -23,6 +22,8 @@ uint8_t g_xk_control = 0;
         _msgMutex.unlock();                             \
     } while ( 0 );
 
+// 线程安全单例
+Q_GLOBAL_STATIC(DataBase, database)
 
 DataBase::DataBase(QObject *parent)
     : QObject(parent)
@@ -33,12 +34,19 @@ DataBase::DataBase(QObject *parent)
     entityType.clear();
     nowEntity.clear();
     lastTimeMap.clear();
+    setStartTime(0);
 }
 
 
 DataBase::~DataBase()
 {
     
+}
+
+
+DataBase *DataBase::instance()
+{
+    return database();
 }
 
 
@@ -383,7 +391,7 @@ my_msg_t DataBase::getMyMsg()
     stMsg.pBuf = Q_NULLPTR;
 
     _msgMutex.lock();
-    if (_qListMyMsgs.size() > 0)
+    if ( _qListMyMsgs.size() > 0 )
     {
         stMsg = _qListMyMsgs.front();
         _qListMyMsgs.pop_front();
@@ -407,6 +415,7 @@ int DataBase::getEntityType(DDS_UnsignedShort platId)
 
 void DataBase::createTrack(int m_type)
 {
+    _entityMutex.lock();
     for(QMap<int,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT*>::Iterator it=_dbEntity.begin();
         it!=_dbEntity.end();it++)
     {
@@ -449,6 +458,7 @@ void DataBase::createTrack(int m_type)
             sendTrack(m_type,entityState->platId);
         }
     }
+    _entityMutex.unlock();
 }
 
 LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *DataBase::getEntityReport(int id)
@@ -650,7 +660,7 @@ void Send_ASpaceX_WRJ_Route(vec3_t *pos, int n)
         way[i].Lat = SurveyMath::RadianToDegree(pos[i].y);
         way[i].Lon = pos[i].z;
     }
-    WRJ_Module::instance().WRJ_send_TrackDataPacket(way, n);
+    WRJ_Module::instance()->WRJ_send_TrackDataPacket(way, n);
 }
 
 
@@ -685,7 +695,7 @@ void Recv_ZDJ_RealTimeLocation(uint32_t type, QDataStream &out)
         p++;
     }
 
-    DataBase::instance().processRecvData(type, &instance);
+    DataBase::instance()->processRecvData(type, &instance);
     
     // 在处理消息后直接释放内存
     if ( instance.pPositionState )
@@ -724,7 +734,7 @@ void Recv_ZDJ_RealTimeLocationTarget(uint32_t type, QDataStream &out)
         p++;
     }
 
-    DataBase::instance().processRecvData(type, &instance);
+    DataBase::instance()->processRecvData(type, &instance);
     
     if ( instance.pTrackReport )
     {
@@ -798,7 +808,7 @@ void Recv_COR_TrackReport(uint32_t type, QDataStream &out)
         ptargets++;
     }
 
-    DataBase::instance().processRecvData(type, &instance);
+    DataBase::instance()->processRecvData(type, &instance);
 
     if ( instance.pTargets )
     {
@@ -834,9 +844,9 @@ void Recv_XK_WRJ_Control(uint32_t type, QDataStream &out)
 
     //向地面站发送控制权夺取或者释放命令？？？
     if(!g_xk_control)
-        WRJ_Module::instance().WRJ_release_CtrlAuthority();
+        WRJ_Module::instance()->WRJ_release_CtrlAuthority();
     else
-        WRJ_Module::instance().WRJ_get_CtrlAuthority();
+        WRJ_Module::instance()->WRJ_get_CtrlAuthority();
 }
 
 

@@ -2,7 +2,6 @@
 
 #include <QApplication>
 #include <QSettings>
-#include <QThread>
 
 #include "wrj_module.h"
 #include "wrj_function_variable.h"
@@ -10,36 +9,64 @@
 
 OnWorker::OnWorker(QObject *parent)
     : QThread(parent)
-    , _pDdsHelper(new DdsHelper(this))
+    , _dataWork(new QThread())
+    , _dataBase(DataBase::instance())
+    , _pDdsHelper(new DdsHelper())
 {
     WRJ_Module::instance();
-    SaveLog::instance().start();
 
-    QThread *dataWork = new QThread(this);
-    DataBase::instance().moveToThread(dataWork);
-    dataWork->start();
+    _dataBase->moveToThread(_dataWork);
+    connect(_dataWork, &QThread::finished, _dataBase, &QObject::deleteLater);
+    _dataWork->start();
 }
 
 OnWorker::~OnWorker()
 {
-    SaveLog::instance().stop();
-    SaveLog::instance().deleteLater();
+    stop();
+    WRJ_Module::instance()->deleteLater();
+    _pCOR_Udp->deleteLater();
+    _pWRJ_Udp->deleteLater();
+    _pXK_Udp->deleteLater();
+    _pZDJ_Udp->deleteLater();
+    _pDdsHelper->deleteLater();
+    _dataWork->quit();
+    _dataWork->wait();
+    _dataWork->deleteLater();
+}
+
+
+void OnWorker::stop()
+{
+    _stopMutex.lock();
+    _bStop = true;
+    _stopMutex.unlock();
 }
 
 
 void OnWorker::run()
 {
-    bool result;
+    int result;
+    
+    result = WRJ_Module::instance()->WRJ_get_CtrlAuthority();
 
-    result = WRJ_Module::instance().WRJ_get_CtrlAuthority();
+    _bStop = false;
 
     while ( result )
     {
+        // 进程退出条件
+        _stopMutex.lock();
+        if (_bStop)
+        {
+            _stopMutex.unlock();
+            break;
+        }
+        _stopMutex.unlock();
+        
         onStartWRJRecv();
-        _pDdsHelper->processMsg(DataBase::instance().getMyMsg());
+        _pDdsHelper->processMsg(DataBase::instance()->getMyMsg());
     }
 
-    WRJ_Module::instance().WRJ_release_CtrlAuthority();
+    WRJ_Module::instance()->WRJ_release_CtrlAuthority();
 }
 
 
@@ -65,11 +92,11 @@ void OnWorker::onStartWRJRecv()
 {
     WRJ_POSITIONSTATE_STRU *p;
 
-    p = WRJ_Module::instance().WRJ_TakePosition();
+    p = WRJ_Module::instance()->WRJ_TakePosition();
 
     if ( p )
     {
-        DataBase::instance().processRecvData(RECV_MSGTYPE_WRJ_ENTITY_POS, p);
+        DataBase::instance()->processRecvData(RECV_MSGTYPE_WRJ_ENTITY_POS, p);
 
         free(p);
     }
@@ -84,14 +111,14 @@ void OnWorker::onStartWRJSend()
     LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntityReport;
 
     id = 41;
-    pEntityReport = DataBase::instance().getEntityReport(id);
+    pEntityReport = DataBase::instance()->getEntityReport(id);
     if ( pEntityReport )
     {
         way.Lon = pEntityReport->geodeticLocationLon;
         way.Lat = pEntityReport->geodeticLocationLon;
         way.Lon = pEntityReport->geodeticLocationLon;
 
-        WRJ_Module::instance().WRJ_send_TrackDataPacket(&way, 1);
+        WRJ_Module::instance()->WRJ_send_TrackDataPacket(&way, 1);
     }
 #endif
 }

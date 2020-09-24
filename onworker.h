@@ -13,26 +13,29 @@
 
 #include <QThread>
 
-#include "savelog.h"
-#include "singleton.h"
 #include "udphelper.h"
 #include "ddshelper.h"
 
 class OnWorker : public QThread
 {
     Q_OBJECT
-    SINGLETON(OnWorker)
+        
 public:
     explicit OnWorker(QObject *parent = nullptr);
     ~OnWorker();
+    void stop();
 
     QMap<unsigned long,LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT> check(QStringList);
 private:
+    QThread *_dataWork;
+    DataBase *_dataBase;
     UdpHelper *_pWRJ_Udp;
     UdpHelper *_pZDJ_Udp;
     UdpHelper *_pCOR_Udp;
     UdpHelper *_pXK_Udp;
     DdsHelper *_pDdsHelper;
+    QMutex _stopMutex;
+    bool _bStop;
 protected:
     virtual void run() Q_DECL_OVERRIDE;
 public slots:
