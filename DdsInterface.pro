@@ -31,6 +31,9 @@ DEFINES += Linux \
 # RTIDDS路径
 MDS_PATH = /home/ywxt-18/MDS
 
+# 子模块
+include($$PWD/qt-json/qt-json.pri)
+
 CONFIG(debug, release|debug) {
   SUFFIX = d
 } else {

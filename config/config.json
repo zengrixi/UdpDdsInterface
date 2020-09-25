@@ -1,0 +1,211 @@
+{
+	"detectionRange": [
+		{
+			"sensor": "radar",
+			"UVA": 200,
+			"Fighter": 250,
+			"AEW": 350,
+			"Ship": 350
+		},
+		{
+			"sensor": "fighter",
+			"UVA": 200,
+			"Fighter": 250,
+			"AEW": 350,
+			"Ship": 350,
+			"leader": 112
+		},
+		{
+			"sensor": "AWACS",
+			"UVA": 200,
+			"Fighter": 250,
+			"AEW": 350,
+			"Ship": 350
+		},
+		{
+			"sensor": "UVA",
+			"SEA": 200,
+			"AIR": 100
+		}
+	],
+	"attribute": [
+		{
+			"camp": "me",
+			"UVA": [
+				{
+					"platid": 42
+				},
+				{
+					"platid": 42
+				}
+			],
+			"fighter": [
+				{
+					"platid": 38
+				},
+				{
+					"platid": 39
+				},
+				{
+					"platid": 310
+				},
+				{
+					"platid": 312
+				},
+				{
+					"platid": 313
+				},
+				{
+					"platid": 314
+				},
+				{
+					"platid": 315
+				},
+				{
+					"platid": 316
+				},
+				{
+					"platid": 317
+				},
+				{
+					"platid": 70
+				},
+				{
+					"platid": 71
+				},
+				{
+					"platid": 72
+				},
+				{
+					"platid": 73
+				},
+				{
+					"platid": 74
+				},
+				{
+					"platid": 75
+				},
+				{
+					"platid": 76
+				}
+			]
+		},
+		{
+			"camp": "enemy",
+			"fighter": [
+				{
+					"platid": 101
+				},
+				{
+					"platid": 110
+				},
+				{
+					"platid": 111
+				},
+				{
+					"platid": 112
+				},
+				{
+					"platid": 113
+				},
+				{
+					"platid": 114
+				},
+				{
+					"platid": 115
+				},
+				{
+					"platid": 116
+				},
+				{
+					"platid": 117
+				},
+				{
+					"platid": 118
+				},
+				{
+					"platid": 119
+				},
+				{
+					"platid": 31
+				},
+				{
+					"platid": 32
+				},
+				{
+					"platid": 33
+				},
+				{
+					"platid": 34
+				},
+				{
+					"platid": 35
+				},
+				{
+					"platid": 36
+				},
+				{
+					"platid": 37
+				}
+			],
+			"AWACS": [
+				{
+					"platid": 120
+				},
+				{
+					"platid": 121
+				},
+				{
+					"platid": 122
+				},
+				{
+					"platid": 123
+				},
+				{
+					"platid": 124
+				},
+				{
+					"platid": 125
+				},
+				{
+					"platid": 130
+				},
+				{
+					"platid": 131
+				},
+				{
+					"platid": 2
+				}
+			],
+			"ships": [
+				{
+					"platid": 200
+				},
+				{
+					"platid": 201
+				},
+				{
+					"platid": 202
+				},
+				{
+					"platid": 203
+				},
+				{
+					"platid": 204
+				},
+				{
+					"platid": 205
+				},
+				{
+					"platid": 206
+				},
+				{
+					"platid": 207
+				},
+				{
+					"platid": 208
+				}
+			]
+		}
+	]
+}

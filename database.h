@@ -28,6 +28,7 @@ typedef struct
 class DataBase : public QObject
 {
     Q_OBJECT
+        
 public:
     // 实体毁伤状态枚举值
     typedef enum
