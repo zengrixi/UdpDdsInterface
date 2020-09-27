@@ -6,6 +6,8 @@
 #include "wrj_module.h"
 #include "wrj_function_variable.h"
 #include "app.h"
+#include "config/config.h"
+#include "waitdialog.h"
 
 OnWorker::OnWorker(QObject *parent)
     : QThread(parent)
@@ -18,6 +20,8 @@ OnWorker::OnWorker(QObject *parent)
     _dataBase->moveToThread(_dataWork);
     connect(_dataWork, &QThread::finished, _dataBase, &QObject::deleteLater);
     _dataWork->start();
+
+    onReadFighterData();
 }
 
 OnWorker::~OnWorker()
@@ -121,6 +125,63 @@ void OnWorker::onStartWRJSend()
         WRJ_Module::instance()->WRJ_send_TrackDataPacket(&way, 1);
     }
 #endif
+}
+
+
+void OnWorker::onReadFighterData()
+{
+    // 获取战斗机位置信息
+    auto json = Config::instance()->readJson("fighter2me.json");
+    QMap<QString, QList<vec2_t>> fighter2me = Config::instance()->getFighterAirRoute(json);
+
+    json = Config::instance()->readJson("fighter2enemy.json");
+    QMap<QString, QList<vec2_t>> fighter2enemy = Config::instance()->getFighterAirRoute(json);
+
+    json = Config::instance()->readJson("error.json");
+    QMap<QString, QList<double>> distanceError = Config::instance()->getDistanceErr(json);
+
+    // 发送战斗机航路
+    LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pPathChangeReq;
+    QMap<QString, QList<vec2_t>>::const_iterator it = fighter2me.constBegin();
+    while ( it != fighter2me.constEnd() )
+    {
+        QList<vec2_t> pos = it.value();
+        pPathChangeReq = LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
+        pPathChangeReq->platId = it.key().toInt();
+        
+        DataBase::instance()->recordPathChangeReq(pPathChangeReq, pos);
+
+        QTimer::singleShot(10*60*1000, [=] {
+            onSendFighterRoute(pPathChangeReq);
+        });
+        
+        it++;
+    }
+
+    it = fighter2enemy.constBegin();
+    while ( it != fighter2enemy.constEnd() )
+    {
+        QList<vec2_t> pos = it.value();
+        pPathChangeReq = LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQTypeSupport::create_data();
+        pPathChangeReq->platId = it.key().toInt();
+        
+        DataBase::instance()->recordPathChangeReq(pPathChangeReq, pos);
+
+        QTimer::singleShot(10*60*1000, [=] {
+            onSendFighterRoute(pPathChangeReq);
+        });
+        
+        it++;
+    }
+}
+
+
+void OnWorker::onSendFighterRoute(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p)
+{
+    my_msg_t msg;
+    msg.eType = NET_MSGTYPE_PATH_CHANGE_REQ;
+    msg.pBuf = p;
+    _pDdsHelper->processMsg(msg);
 }
 
 

@@ -15,6 +15,7 @@
 #include <QObject>
 
 #include "json.h"
+#include "commondef.h"
 
 
 class Config : public QObject
@@ -27,9 +28,13 @@ public:
     ~Config();
     QMap<QString, QVariant> getDetectionRange(const QString &name);
     QList<int> getEntityPlatID2Me(const QString &name);
+    QMap<QString, QList<vec2_t>> getFighterAirRoute(const QVariant &var);
+    QMap<QString, QList<double>> getDistanceErr(const QVariant & var);
+    QVariant readJson(const QString &filename);
 private:
-    int readJson();
     QString readFile(const QString &filename);
+    void recordPos(vec2_t & pos, const QString & type, const QVariant & var);
+    QString getOneStr(const QString & str, const QRegExp & rx);
     QtJson::JsonObject _config;
 };
 

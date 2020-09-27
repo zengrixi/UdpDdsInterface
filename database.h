@@ -44,6 +44,7 @@ public:
     bool recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity);
     void releaseEntity(int key);
     void recordPathChangeReq(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1, path_change_req_t *p2, uint32_t n);
+    void recordPathChangeReq(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1, const QList<vec2_t> &ps);
     void makeCopy(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT **dst, 
         const LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *src, bool bAllocated = false);
     void processPathChange(WRJ_POSITIONSTATE_STRU *pData);

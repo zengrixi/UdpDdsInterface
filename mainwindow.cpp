@@ -7,6 +7,7 @@
 #include "app.h"
 #include "waitdialog.h"
 #include "SurveyMath/geocoordinate.h"
+#include "config/config.h"
 
 
 using namespace SurveyMath;

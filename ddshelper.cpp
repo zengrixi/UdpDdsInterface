@@ -183,7 +183,6 @@ bool DdsHelper::onSendCommand(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *pInstance)
 
 bool DdsHelper::onSendMessageData(LHZS::SDI_TRACK_REPORT *pInstance)
 {
-    TestInfo(pInstance);
     return _pTrackRecvCom->publishMsg(pInstance, 0);
 }
 

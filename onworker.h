@@ -43,6 +43,8 @@ public slots:
     void onConnectSql();
     void onStartWRJRecv();
     void onStartWRJSend();
+    void onReadFighterData();
+    void onSendFighterRoute(LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ * p);
 };
 
 #endif // ONWORKER_H

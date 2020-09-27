@@ -59,7 +59,7 @@ bool DataBase::recordEntity(LHZS::VRFORCE_ENTITY::ENTITYSTATE_REPORT *pEntity)
     {
         _entityMutex.lock();
         dbIterator = _dbEntity.find(pEntity->platId);
-        if (dbIterator != _dbEntity.end())
+        if ( dbIterator != _dbEntity.end() )
         {
             releaseEntity(dbIterator.key());
             _dbEntity.erase(dbIterator);
@@ -161,6 +161,26 @@ void DataBase::recordPathChangeReq
         posDatas[i].lon_f = p2->path[i].x;
         posDatas[i].lat_f = p2->path[i].y;
         posDatas[i].alt_f = p2->path[i].z;
+    }
+    
+    LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
+    (&p1->PosList, posDatas, n);
+}
+
+
+void DataBase::recordPathChangeReq
+    ( LHZS::VRFORCE_COMMAND::PATH_CHANGE_REQ *p1
+    , const QList<vec2_t> &ps )
+{
+    auto n = ps.count();
+
+    LHZS::VRFORCE_COMMAND::POS_DATA posDatas[n];
+    
+    for (int i = 0; i < n; i++)
+    {
+        posDatas[i].lon_f = ps.at(i).x;
+        posDatas[i].lat_f = ps.at(i).y;
+        posDatas[i].alt_f = 0;
     }
     
     LHZS::VRFORCE_COMMAND::POS_DATASeq_from_array
